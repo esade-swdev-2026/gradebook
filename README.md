@@ -5,7 +5,7 @@
 > in the folder `src/app/`, and in the imports under `tests/`. Session 5's lab walks
 > you through it.
 
-One or two sentences on what your program does and who it is for.
+Gradebook is a program the lets professors log and check grades other students for different assignments AND lets students check their grades.
 
 ## Install
 
