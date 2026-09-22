@@ -1,4 +1,4 @@
-# app
+# Gradebook
 
 > **First thing: rename `app` to your project.** It appears in this file, in
 > `pyproject.toml` (`name`, `[project.scripts]`, `[tool.hatch.build.targets.wheel]`),
