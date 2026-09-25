@@ -1,28 +1,35 @@
+from pathlib import Path
+
+import pandas as pd
 from typer.testing import CliRunner
 
-from app.cli import app
+from gradebook.cli import app
 
 runner = CliRunner()
 
 
-def test_greet_says_hello() -> None:
-    result = runner.invoke(app, ["greet", "Ada"])
+def test_add_student_adds_student_to_class(tmp_path: Path) -> None:
+    class_file = tmp_path / "class.csv"
+
+    result = runner.invoke(
+        app,
+        ["add-student", "Ada Lovelace", "--class-file", str(class_file)],
+    )
+
     assert result.exit_code == 0
-    assert "Hello, Ada!" in result.stdout
+    assert "Added Ada Lovelace" in result.stdout
+
+    roster = pd.read_csv(class_file)
+    assert "Ada Lovelace" in roster["name"].values
 
 
-def test_greet_repeats_with_count() -> None:
-    result = runner.invoke(app, ["greet", "Ada", "--count", "3"])
-    assert result.exit_code == 0
-    assert result.stdout.count("Hello, Ada!") == 3
+def test_add_student_rejects_empty_name(tmp_path: Path) -> None:
+    class_file = tmp_path / "class.csv"
 
+    result = runner.invoke(
+        app,
+        ["add-student", "   ", "--class-file", str(class_file)],
+    )
 
-def test_greet_rejects_bad_count() -> None:
-    result = runner.invoke(app, ["greet", "Ada", "--count", "0"])
     assert result.exit_code == 1
-
-
-def test_bye_says_goodbye() -> None:
-    result = runner.invoke(app, ["bye", "Ada"])
-    assert result.exit_code == 0
-    assert "Goodbye, Ada." in result.stdout
+    assert "student name cannot be empty" in result.output

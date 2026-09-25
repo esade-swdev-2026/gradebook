@@ -1,49 +1,33 @@
 # Gradebook
 
-> **First thing: rename `app` to your project.** It appears in this file, in
-> `pyproject.toml` (`name`, `[project.scripts]`, `[tool.hatch.build.targets.wheel]`),
-> in the folder `src/app/`, and in the imports under `tests/`. Session 5's lab walks
-> you through it.
+Gradebook is a command-line application for teachers to manage students, assignments, and grades. It helps teachers keep track of their class and academic performance directly from the terminal.
 
-Gradebook is a program the lets professors log and check grades other students for different assignments AND lets students check their grades.
+## Installation
 
-## Install
+Install the project and its dependencies:
 
-```
+```bash
 uv sync
 ```
 
-This creates a virtual environment and installs everything, including the development
-tools, from `uv.lock` — the committed file that pins exact versions so every teammate
-and CI resolve the same ones. When you change a dependency in `pyproject.toml`, run
-`uv lock` and commit the updated `uv.lock`; CI fails if the two disagree.
+## Usage
 
-## Run
+View the available commands:
 
-```
-uv run app --help
-uv run app greet World
-uv run app greet World --count 3
+```bash
+uv run gradebook --help
 ```
 
-## Develop
+Add a student to the class:
 
-```
-uv run ruff check .          # lint
-uv run ruff format .         # format (CI runs `--check` and fails on a diff)
-uv run mypy src tests        # types
-uv run pytest                # tests
+```bash
+uv run gradebook add-student "Ada Lovelace"
 ```
 
-These four commands are exactly what `.github/workflows/check.yml` runs on every push.
-If they pass here, CI passes.
+By default, students are stored in `class.csv`.
 
-## Layout
+To use a different class file:
 
-```
-src/app/          your package — importable, installable, not just a script
-  cli.py          the typer command-line interface
-  __main__.py     lets `python -m app` work
-tests/            pytest tests, mirroring src/
-pyproject.toml    dependencies and tool configuration — the single source of truth
+```bash
+uv run gradebook add-student "Ada Lovelace" --class-file economics.csv
 ```
