@@ -31,3 +31,6 @@ To use a different class file:
 ```bash
 uv run gradebook add-student "Ada Lovelace" --class-file economics.csv
 ```
+## I/O boundary
+
+All current I/O lives in `src/gradebook/cli.py`: CSV reading/writing uses `pd.read_csv()` and `to_csv()`, while CLI output and exits use `typer.echo()` and `typer.Exit()`.
