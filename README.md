@@ -47,3 +47,10 @@ src/app/          your package — importable, installable, not just a script
 tests/            pytest tests, mirroring src/
 pyproject.toml    dependencies and tool configuration — the single source of truth
 ```
+
+
+## I/O boundary
+
+```
+All current I/O lives in ⁠ src/gradebook/cli.py ⁠: CSV reading/writing uses ⁠ pd.read_csv() ⁠ and ⁠ to_csv() ⁠, while CLI output and exits use ⁠ typer.echo() ⁠ and ⁠ typer.Exit() ⁠.
+```
