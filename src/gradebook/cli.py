@@ -3,6 +3,8 @@ from pathlib import Path
 import pandas as pd
 import typer
 
+from gradebook.core import add_student
+
 app = typer.Typer(help="A terminal gradebook for one class.")
 
 CLASS_FILE = Path("class.csv")
@@ -13,28 +15,22 @@ def main() -> None:
     """Manage students and grades for your class."""
 
 
-@app.command()
-def add_student(name: str, class_file: Path = CLASS_FILE) -> None:
+@app.command("add-student")
+def add_student_command(name: str, class_file: Path = CLASS_FILE) -> None:
     """Add a student to the class list."""
-    cleaned = name.strip()
-
-    if not cleaned:
-        typer.echo("Error: student name cannot be empty.", err=True)
-        raise typer.Exit(code=1)
-
     my_class = _load_roster(class_file)
+    names = my_class["name"].tolist()
 
-    if cleaned in my_class["name"].values:
-        typer.echo(f"Error: student '{cleaned}' already exists.", err=True)
-        raise typer.Exit(code=1)
+    try:
+        updated_names = add_student(names, name)
+    except ValueError as error:
+        typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(code=1) from error
 
-    my_class = pd.concat(
-        [my_class, pd.DataFrame({"name": [cleaned]})],
-        ignore_index=True,
-    )
+    updated_class = pd.DataFrame({"name": updated_names})
+    _save_roster(class_file, updated_class)
 
-    _save_roster(class_file, my_class)
-    typer.echo(f"Added {cleaned} to {class_file}")
+    typer.echo(f"Added {updated_names[-1]} to {class_file}")
 
 
 def _load_roster(class_file: Path) -> pd.DataFrame:
