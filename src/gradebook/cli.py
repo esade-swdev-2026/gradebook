@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import typer
 
-from gradebook.core import add_student
+from gradebook.gradebook import add_student
 
 app = typer.Typer(help="A terminal gradebook for one class.")
 

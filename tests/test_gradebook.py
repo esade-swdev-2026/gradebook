@@ -1,11 +1,16 @@
 import pytest
 
-from gradebook.core import (
+from gradebook.gradebook import (
+    Gradebook,
     add_student,
     clean_student_name,
     count_students,
     is_valid_student_name,
     student_exists,
+)
+
+initialize_gradebook = Gradebook(
+    students=["Varvara Lilchitskaia", "Jannat Moufid", "Kirill Mushinskii", "Dayana Bukenova"]
 )
 
 
@@ -31,11 +36,11 @@ def test_is_valid_student_name(name: str, expected: bool) -> None:
 
 
 def test_student_exists() -> None:
-    assert student_exists("Kirill Mushinskii", ["Kirill Mushinskii", "Dayana Bukenova"])
+    assert student_exists("Kirill Mushinskii", initialize_gradebook.students)
 
 
 def test_student_does_not_exist() -> None:
-    assert not student_exists("Varvara Lilchitskaia", ["Kirill Mushinskii", "Dayana Bukenova"])
+    assert not student_exists("Jose Antonio", initialize_gradebook.students)
 
 
 def test_add_student() -> None:
@@ -54,16 +59,16 @@ def test_add_student_does_not_modify_original_list() -> None:
 
 def test_add_student_rejects_empty_name() -> None:
     with pytest.raises(ValueError, match="student name cannot be empty"):
-        add_student(["Kirill Mushinskii"], "   ")
+        add_student(initialize_gradebook.students, "   ")
 
 
 def test_add_student_rejects_duplicate() -> None:
     with pytest.raises(ValueError, match="student 'Varvara Lilchitskaia' already exists"):
-        add_student(["Varvara Lilchitskaia"], "  Varvara Lilchitskaia  ")
+        add_student(initialize_gradebook.students, "  Varvara Lilchitskaia  ")
 
 
 def test_count_students() -> None:
-    assert count_students(["Jannat Moufid", "Dayana Bukenova"]) == 2
+    assert count_students(initialize_gradebook.students) == 4
 
 
 def test_count_students_empty() -> None:

@@ -1,3 +1,11 @@
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Gradebook:
+    students: list[str] = field(default_factory=list)
+
+
 def clean_student_name(name: str) -> str:
     return name.strip()
 
