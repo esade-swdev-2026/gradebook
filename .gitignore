@@ -10,3 +10,10 @@ build/
 .coverage
 class.csv
 economics.csv
+
+# macOS Finder files
+.DS_Store
+
+# local class data (may contain real names; the repo is public)
+gradebook-data/
+my-class/

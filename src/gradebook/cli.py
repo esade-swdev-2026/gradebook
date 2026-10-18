@@ -1,49 +1,117 @@
 from pathlib import Path
+from typing import Annotated, NoReturn
 
-import pandas as pd
 import typer
 
-from gradebook.gradebook import add_student
+from gradebook.coursework import add_assignment, find_grade, record_grade
+from gradebook.grading import student_standing
+from gradebook.models import Gradebook
+from gradebook.report import format_grade_confirmation, format_report
+from gradebook.roster import add_student, remove_student
+from gradebook.storage import load_gradebook, save_gradebook
 
 app = typer.Typer(help="A terminal gradebook for one class.")
 
-CLASS_FILE = Path("class.csv")
+DEFAULT_DATA_DIR = Path("gradebook-data")
+
+DataDir = Annotated[
+    Path,
+    typer.Option("--data-dir", help="Folder holding students.csv, assignments.csv, grades.csv."),
+]
 
 
 @app.callback()
 def main() -> None:
-    """Manage students and grades for your class."""
+    """Manage students, weighted assignments and grades for your class."""
 
 
 @app.command("add-student")
-def add_student_command(name: str, class_file: Path = CLASS_FILE) -> None:
-    """Add a student to the class list."""
-    my_class = _load_roster(class_file)
-    names = my_class["name"].tolist()
-
+def add_student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
+    """Add a student to the class."""
+    gradebook = _load(data_dir)
     try:
-        updated_names = add_student(names, name)
+        updated = add_student(gradebook, name)
     except ValueError as error:
-        typer.echo(f"Error: {error}", err=True)
-        raise typer.Exit(code=1) from error
-
-    updated_class = pd.DataFrame({"name": updated_names})
-    _save_roster(class_file, updated_class)
-
-    typer.echo(f"Added {updated_names[-1]} to {class_file}")
+        _fail(error)
+    _save(data_dir, updated)
+    typer.echo(f"Added {updated.students[-1]} to {data_dir}")
 
 
-def _load_roster(class_file: Path) -> pd.DataFrame:
-    """Load the class list or return an empty roster if the file is missing."""
-    if class_file.exists():
-        return pd.read_csv(class_file, dtype=str, keep_default_na=False)
+@app.command("remove-student")
+def remove_student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
+    """Remove a student and all of their grades."""
+    gradebook = _load(data_dir)
+    try:
+        updated = remove_student(gradebook, name)
+    except ValueError as error:
+        _fail(error)
+    _save(data_dir, updated)
+    typer.echo(f"Removed {name.strip()} and their grades from {data_dir}")
 
-    return pd.DataFrame({"name": pd.Series(dtype=str)})
+
+@app.command("add-assignment")
+def add_assignment_command(
+    name: str,
+    weight: Annotated[float, typer.Argument(help="Percent of the final grade, e.g. 30.")],
+    data_dir: DataDir = DEFAULT_DATA_DIR,
+) -> None:
+    """Add an assignment worth WEIGHT percent of the final grade."""
+    gradebook = _load(data_dir)
+    try:
+        updated = add_assignment(gradebook, name, weight)
+    except ValueError as error:
+        _fail(error)
+    _save(data_dir, updated)
+    added = updated.assignments[-1]
+    typer.echo(f"Added {added.name} ({added.weight:g}% of the final grade)")
 
 
-def _save_roster(class_file: Path, roster: pd.DataFrame) -> None:
-    """Save the class list to CSV."""
-    roster[["name"]].to_csv(class_file, index=False)
+@app.command("record-grade")
+def record_grade_command(
+    student: str,
+    assignment: str,
+    score: Annotated[float, typer.Argument(help="Score from 0 to 10.")],
+    data_dir: DataDir = DEFAULT_DATA_DIR,
+) -> None:
+    """Record a student's score for an assignment, or update it if one exists."""
+    gradebook = _load(data_dir)
+    try:
+        updated = record_grade(gradebook, student, assignment, score)
+    except ValueError as error:
+        _fail(error)
+    _save(data_dir, updated)
+
+    recorded = updated.grades[-1]
+    previous = find_grade(gradebook.grades, recorded.student, recorded.assignment)
+    standing = student_standing(updated, recorded.student)
+    for line in format_grade_confirmation(recorded, standing, is_update=previous is not None):
+        typer.echo(line)
+
+
+@app.command("report")
+def report_command(data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
+    """Show every student's current grade, what they need to pass, and class statistics."""
+    for line in format_report(_load(data_dir)):
+        typer.echo(line)
+
+
+def _load(data_dir: Path) -> Gradebook:
+    try:
+        return load_gradebook(data_dir)
+    except (OSError, ValueError) as error:
+        _fail(error)
+
+
+def _save(data_dir: Path, gradebook: Gradebook) -> None:
+    try:
+        save_gradebook(data_dir, gradebook)
+    except OSError as error:
+        _fail(error)
+
+
+def _fail(error: Exception) -> NoReturn:
+    typer.echo(f"Error: {error}", err=True)
+    raise typer.Exit(code=1) from error
 
 
 if __name__ == "__main__":

@@ -40,3 +40,5 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = ["-p", "config_test"]
