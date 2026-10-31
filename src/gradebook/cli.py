@@ -9,6 +9,7 @@ from gradebook.models import Gradebook
 from gradebook.report import format_grade_confirmation, format_report
 from gradebook.roster import add_student, remove_student
 from gradebook.storage import load_gradebook, save_gradebook
+from gradebook.student_report import format_student_detail
 
 app = typer.Typer(help="A terminal gradebook for one class.")
 
@@ -92,6 +93,18 @@ def record_grade_command(
 def report_command(data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
     """Show every student's current grade, what they need to pass, and class statistics."""
     for line in format_report(_load(data_dir)):
+        typer.echo(line)
+
+
+@app.command("student")
+def student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
+    """Show one student's score on every assignment, current grade and what they need."""
+    gradebook = _load(data_dir)
+    try:
+        lines = format_student_detail(gradebook, name)
+    except ValueError as error:
+        _fail(error)
+    for line in lines:
         typer.echo(line)
 
 
