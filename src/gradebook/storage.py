@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from gradebook.export import EXPORT_COLUMNS, export_rows
 from gradebook.models import Assignment, Grade, Gradebook
 from gradebook.validation import require_valid_gradebook
 
@@ -73,6 +74,12 @@ def save_gradebook(data_dir: Path, gradebook: Gradebook) -> None:
         },
         columns=GRADE_COLUMNS,
     ).to_csv(data_dir / GRADES_FILE, index=False)
+
+
+def save_report_csv(path: Path, gradebook: Gradebook) -> None:
+    """Write the class report to one CSV file, for opening in a spreadsheet."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(export_rows(gradebook), columns=EXPORT_COLUMNS).to_csv(path, index=False)
 
 
 def _read_table(path: Path, required_columns: list[str]) -> pd.DataFrame:
