@@ -54,6 +54,7 @@ uv run gradebook add-assignment "Final exam" 60 --data-dir my-class
 uv run gradebook record-grade "Marta Puig" "Midterm exam" 7.5 --data-dir my-class
 uv run gradebook record-grade "Pol Serra" "Midterm exam" 3 --data-dir my-class
 uv run gradebook report --data-dir my-class
+uv run gradebook student "Pol Serra" --data-dir my-class
 ```
 
 | Command | What it does |
@@ -63,6 +64,7 @@ uv run gradebook report --data-dir my-class
 | `add-assignment NAME WEIGHT` | Adds an assignment worth `WEIGHT` % of the final grade |
 | `record-grade STUDENT ASSIGNMENT SCORE` | Records a 0–10 score; running it again updates it |
 | `report` | Current grades, bands, what each student needs to pass, class statistics |
+| `student NAME` | One student's score on every assignment, current grade, and what they need to pass |
 
 Run `uv run gradebook --help` or `uv run gradebook COMMAND --help` for details.
 
