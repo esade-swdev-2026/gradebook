@@ -8,7 +8,7 @@ from gradebook.grading import student_standing
 from gradebook.models import Gradebook
 from gradebook.report import format_grade_confirmation, format_report
 from gradebook.roster import add_student, remove_student
-from gradebook.storage import load_gradebook, save_gradebook
+from gradebook.storage import load_gradebook, save_gradebook, save_report_csv
 from gradebook.student_report import format_student_detail
 
 app = typer.Typer(help="A terminal gradebook for one class.")
@@ -94,6 +94,20 @@ def report_command(data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
     """Show every student's current grade, what they need to pass, and class statistics."""
     for line in format_report(_load(data_dir)):
         typer.echo(line)
+
+
+@app.command("export")
+def export_command(
+    path: Annotated[Path, typer.Argument(help="CSV file to write, e.g. report.csv.")],
+    data_dir: DataDir = DEFAULT_DATA_DIR,
+) -> None:
+    """Write the class report to a CSV file, for opening in a spreadsheet."""
+    gradebook = _load(data_dir)
+    try:
+        save_report_csv(path, gradebook)
+    except OSError as error:
+        _fail(error)
+    typer.echo(f"Exported {len(gradebook.students)} students to {path}")
 
 
 @app.command("student")
