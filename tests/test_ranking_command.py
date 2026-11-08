@@ -26,7 +26,16 @@ def test_ranking_rejects_a_top_below_one() -> None:
     assert "count must be at least 1" in result.output
 
 
-def test_ranking_of_a_class_without_grades_says_so(tmp_path: Path) -> None:
+def test_ranking_of_an_empty_class_says_so(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["ranking", "--data-dir", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert "No student has a grade yet." in result.output
+
+
+def test_ranking_of_students_without_grades_says_so(tmp_path: Path) -> None:
+    runner.invoke(app, ["add-student", "Noa Ferrer", "--data-dir", str(tmp_path)])
+
     result = runner.invoke(app, ["ranking", "--data-dir", str(tmp_path)])
 
     assert result.exit_code == 0
