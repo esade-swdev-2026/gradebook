@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from gradebook.cli import app
@@ -19,8 +20,9 @@ def test_ranking_shows_the_best_students_first() -> None:
     assert "Hugo Navarro" in lines[1]
 
 
-def test_ranking_rejects_a_top_below_one() -> None:
-    result = runner.invoke(app, ["ranking", "--top", "0", "--data-dir", str(DEMO_CLASS)])
+@pytest.mark.parametrize("top", ["0", "-1"])
+def test_ranking_rejects_a_top_below_one(top: str) -> None:
+    result = runner.invoke(app, ["ranking", "--top", top, "--data-dir", str(DEMO_CLASS)])
 
     assert result.exit_code == 1
     assert "count must be at least 1" in result.output
@@ -40,3 +42,10 @@ def test_ranking_of_students_without_grades_says_so(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "No student has a grade yet." in result.output
+
+
+def test_ranking_with_a_top_larger_than_the_class_shows_everyone() -> None:
+    result = runner.invoke(app, ["ranking", "--top", "10", "--data-dir", str(DEMO_CLASS)])
+
+    assert result.exit_code == 0
+    assert len(result.output.splitlines()) == 4
