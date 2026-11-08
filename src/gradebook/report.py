@@ -7,6 +7,7 @@ from gradebook.grading import (
     passing_count,
 )
 from gradebook.models import MAX_SCORE, AssignmentSummary, Grade, Gradebook, StudentStanding
+from gradebook.ranking import RankedStudent
 
 NAME_WIDTH = 24
 NUMBER_WIDTH = 8
@@ -100,3 +101,10 @@ def format_report(gradebook: Gradebook) -> list[str]:
         ]
     )
     return lines
+
+
+def format_ranking(ranked: list[RankedStudent]) -> list[str]:
+    """One line per student: position, name and current grade, best first."""
+    if not ranked:
+        return ["No student has a grade yet."]
+    return [f"{r.position:>3}. {r.student:<{NAME_WIDTH}} {r.current_grade:.1f}" for r in ranked]

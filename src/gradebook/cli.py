@@ -4,9 +4,10 @@ from typing import Annotated, NoReturn
 import typer
 
 from gradebook.coursework import add_assignment, find_grade, record_grade
-from gradebook.grading import student_standing
+from gradebook.grading import class_standings, student_standing
 from gradebook.models import Gradebook
-from gradebook.report import format_grade_confirmation, format_report
+from gradebook.ranking import top_students
+from gradebook.report import format_grade_confirmation, format_ranking, format_report
 from gradebook.roster import add_student, remove_student
 from gradebook.storage import load_gradebook, save_gradebook, save_report_csv
 from gradebook.student_report import format_student_detail
@@ -119,6 +120,21 @@ def student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
     except ValueError as error:
         _fail(error)
     for line in lines:
+        typer.echo(line)
+
+
+@app.command("ranking")
+def ranking_command(
+    top: Annotated[int, typer.Option("--top", help="How many positions to show.")] = 3,
+    data_dir: DataDir = DEFAULT_DATA_DIR,
+) -> None:
+    """Show the students with the best current grade, best first."""
+    standings = class_standings(_load(data_dir))
+    try:
+        ranked = top_students(standings, top)
+    except ValueError as error:
+        _fail(error)
+    for line in format_ranking(ranked):
         typer.echo(line)
 
 
