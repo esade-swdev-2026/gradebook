@@ -1,0 +1,9 @@
+.venv/
+.git/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+gradebook-data/
+my-class/
