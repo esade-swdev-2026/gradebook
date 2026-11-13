@@ -112,6 +112,28 @@ or, in one script:
 bash scripts/check.sh
 ```
 
+## Run with Docker
+
+You need Docker and nothing else. From the root of the repository:
+
+```bash
+docker build -t gradebook .
+docker run --rm gradebook --help
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "Marta Puig"
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-assignment "Midterm exam" 40
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Marta Puig" "Midterm exam" 7.5
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook report
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook export gradebook-data/report.csv
+```
+
+Every `docker run` starts a new container and `--rm` deletes it afterwards, yet the report
+still shows Marta: the class lives in the named volume `gradebook-data`, outside the image.
+`docker volume rm gradebook-data` deletes it.
+
+The container can only write inside `/app/gradebook-data`. For a second class, use a
+subfolder: `--data-dir gradebook-data/my-class`.
+`export` must also write inside it, e.g. `gradebook-data/report.csv`.
+
 ## Project structure
 
 ```text
