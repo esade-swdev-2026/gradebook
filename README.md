@@ -123,6 +123,7 @@ docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "Mar
 docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-assignment "Midterm exam" 40
 docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Marta Puig" "Midterm exam" 7.5
 docker run --rm -v gradebook-data:/app/gradebook-data gradebook report
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook export gradebook-data/report.csv
 ```
 
 Every `docker run` starts a new container and `--rm` deletes it afterwards, yet the report
@@ -131,6 +132,7 @@ still shows Marta: the class lives in the named volume `gradebook-data`, outside
 
 The container can only write inside `/app/gradebook-data`. For a second class, use a
 subfolder: `--data-dir gradebook-data/my-class`.
+`export` must also write inside it, e.g. `gradebook-data/report.csv`.
 
 ## Project structure
 
