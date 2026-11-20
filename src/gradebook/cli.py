@@ -8,7 +8,7 @@ from gradebook.grading import class_standings, student_standing
 from gradebook.models import Gradebook
 from gradebook.ranking import top_students
 from gradebook.report import format_grade_confirmation, format_ranking, format_report
-from gradebook.roster import add_student, remove_student
+from gradebook.roster import add_student, remove_student, rename_student
 from gradebook.storage import load_gradebook, save_gradebook, save_report_csv
 from gradebook.student_report import format_student_detail
 
@@ -50,6 +50,20 @@ def remove_student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> N
         _fail(error)
     _save(data_dir, updated)
     typer.echo(f"Removed {name.strip()} and their grades from {data_dir}")
+
+
+@app.command("rename-student")
+def rename_student_command(
+    old_name: str, new_name: str, data_dir: DataDir = DEFAULT_DATA_DIR
+) -> None:
+    """Rename a student, keeping all of their grades."""
+    gradebook = _load(data_dir)
+    try:
+        updated = rename_student(gradebook, old_name, new_name)
+    except ValueError as error:
+        _fail(error)
+    _save(data_dir, updated)
+    typer.echo(f"Renamed {old_name.strip()} to {new_name.strip()} in {data_dir}")
 
 
 @app.command("add-assignment")

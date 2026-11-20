@@ -15,6 +15,26 @@ def add_student(gradebook: Gradebook, raw_name: str) -> Gradebook:
     return replace(gradebook, students=[*gradebook.students, name])
 
 
+def rename_student(gradebook: Gradebook, raw_old_name: str, raw_new_name: str) -> Gradebook:
+    """Give a student a new name, keeping their place in the class and all their grades."""
+    old_name = require_name(raw_old_name, "student")
+    new_name = require_name(raw_new_name, "new student")
+    if not student_exists(gradebook, old_name):
+        raise ValueError(f"unknown student '{old_name}'.")
+    if new_name == old_name:
+        raise ValueError(f"student '{old_name}' already has that name.")
+    if student_exists(gradebook, new_name):
+        raise ValueError(f"student '{new_name}' already exists.")
+    return replace(
+        gradebook,
+        students=[new_name if student == old_name else student for student in gradebook.students],
+        grades=[
+            replace(grade, student=new_name) if grade.student == old_name else grade
+            for grade in gradebook.grades
+        ],
+    )
+
+
 def remove_student(gradebook: Gradebook, raw_name: str) -> Gradebook:
     """Remove the student and every grade recorded for them."""
     name = require_name(raw_name, "student")
