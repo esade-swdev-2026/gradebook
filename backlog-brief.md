@@ -19,7 +19,7 @@ Status at v1.1, the final release (November 2026).
 - `ranking --top N`: the best students by current grade
 - `export FILE`: the class report as a CSV file for a spreadsheet
 - Hand-edited CSV files are checked on load and rejected, never silently repaired
-- A Docker image, built and run in CI and published to GHCR on every version tag
+- A Docker image, built and run in CI and published to GHCR on every merge to main and every version tag, for Intel and Apple Silicon
 
 ## Dropped, and why
 
