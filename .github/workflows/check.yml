@@ -51,3 +51,48 @@ jobs:
 
       - name: Run the image
         run: docker run --rm gradebook --help
+
+  release:
+    needs: check
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Name the image
+        run: |
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+          echo "SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build the image
+        run: docker build --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t "$IMAGE:$SHA" .
+
+      - name: Push it, tagged with the commit
+        run: docker push "$IMAGE:$SHA"
+
+      - name: Push it, tagged with the version
+        if: github.ref_type == 'tag'
+        run: |
+          docker tag "$IMAGE:$SHA" "$IMAGE:$GITHUB_REF_NAME"
+          docker push "$IMAGE:$GITHUB_REF_NAME"
+
+      - name: Pull it back and run it
+        run: |
+          docker image rm "$IMAGE:$SHA"
+          published="$IMAGE:$SHA"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            docker image rm "$IMAGE:$GITHUB_REF_NAME"
+            published="$IMAGE:$GITHUB_REF_NAME"
+          fi
+          docker pull "$published"
+          docker run --rm "$published" --help

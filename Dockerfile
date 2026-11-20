@@ -6,6 +6,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev --no-install-project
 
 COPY README.md LICENSE ./
+COPY examples ./examples
 COPY src ./src
 RUN uv sync --locked --no-dev
 
