@@ -1,11 +1,14 @@
+from gradebook.class_stats import ScoreRange
 from gradebook.models import Grade, Gradebook, StudentStanding
 from gradebook.report import (
     PASS_OUT_OF_REACH,
     PASS_SECURED,
+    format_band_counts,
     format_grade_confirmation,
     format_needed_to_pass,
     format_report,
     format_score,
+    format_score_range_row,
 )
 
 
@@ -52,3 +55,42 @@ def test_grade_confirmation_says_updated_for_an_existing_grade() -> None:
         "Updated 6 for Leo Martin on Midterm exam.",
         "Current grade: 6.0 (Pass)",
     ]
+
+
+def test_score_range_row_shows_lowest_median_and_highest() -> None:
+    row = format_score_range_row(
+        ScoreRange(assignment="Midterm exam", highest=8.5, lowest=1.0, median_score=5.0)
+    )
+
+    assert row.startswith("Midterm exam")
+    assert row.split()[-3:] == ["1.0", "5.0", "8.5"]
+
+
+def test_score_range_row_of_an_ungraded_assignment_shows_dashes() -> None:
+    row = format_score_range_row(
+        ScoreRange(assignment="Final exam", highest=None, lowest=None, median_score=None)
+    )
+
+    assert row.split()[-3:] == ["-", "-", "-"]
+
+
+def test_band_counts_list_every_band_best_first() -> None:
+    counts = {"Excellent": 0, "Very good": 1, "Pass": 0, "Fail": 1}
+
+    assert format_band_counts(counts) == (
+        "Students per band: Excellent 0, Very good 1, Pass 0, Fail 1"
+    )
+
+
+def test_report_shows_the_score_spread_and_the_bands(demo_gradebook: Gradebook) -> None:
+    report = "\n".join(format_report(demo_gradebook))
+
+    assert "Score spread" in report
+    assert "Students per band: Excellent 0, Very good 1, Pass 0, Fail 1" in report
+
+
+def test_report_without_assignments_has_no_score_spread() -> None:
+    report = "\n".join(format_report(Gradebook(students=["Noa Ferrer"])))
+
+    assert "Score spread" not in report
+    assert "Students per band: Excellent 0, Very good 0, Pass 0, Fail 0" in report
