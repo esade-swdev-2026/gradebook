@@ -5,7 +5,7 @@ Status at v1.1, the final release (November 2026).
 |N|Item|Status|Notes|
 |-|----|------|-----|
 |1|As a teacher, I can log in with my username, so that I get access to my own workspace|Dropped|See below|
-|2|As a teacher, I can add/edit/remove students from my class, so I can manage my class|Partly done|`add-student` and `remove-student`; renaming a student is not built|
+|2|As a teacher, I can add/edit/remove students from my class, so I can manage my class|Done|`add-student`, `rename-student` (keeps their grades) and `remove-student`|
 |3|As a teacher, I can record a students grade, by checking the name and adding the number, so that I can keep track|Done|`record-grade`|
 |4|As a teacher, I can update a students grade, by checking the name and adding the number, so that I can keep track|Done|`record-grade` again replaces the old score|
 |5|As a teacher, I can assign different weights to each assignment, so that they contribute differently to the final grade|Done|`add-assignment NAME WEIGHT`; weights cannot add up to more than 100|

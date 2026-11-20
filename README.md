@@ -60,11 +60,13 @@ uv run gradebook report --data-dir my-class
 uv run gradebook student "Pol Serra" --data-dir my-class
 uv run gradebook ranking --top 1 --data-dir my-class
 uv run gradebook export my-class-report.csv --data-dir my-class
+uv run gradebook rename-student "Pol Serra" "Pol Serra Vidal" --data-dir my-class
 ```
 
 | Command | What it does |
 |---|---|
 | `add-student NAME` | Adds a student to the class |
+| `rename-student OLD NEW` | Renames a student, keeping all of their grades |
 | `remove-student NAME` | Removes a student and all of their grades |
 | `add-assignment NAME WEIGHT` | Adds an assignment worth `WEIGHT` % of the final grade |
 | `record-grade STUDENT ASSIGNMENT SCORE` | Records a 0–10 score; running it again updates it |
@@ -147,7 +149,7 @@ subfolder: `--data-dir gradebook-data/my-class`.
 src/gradebook/
   models.py      dataclasses and grading constants (scale, pass mark, bands)
   validation.py  name, score and weight rules
-  roster.py      add and remove students
+  roster.py      add, rename and remove students
   coursework.py  add assignments, record grades
   grading.py     weighted grades, what is needed to pass, class averages
   class_stats.py score spread per assignment, students per grade band
@@ -171,9 +173,9 @@ We used Claude (Anthropic's AI assistant) in this project, and we say where:
 - **Planning v1.0.** We asked it to compare the repository with the final rubric and the
   course slides; it listed the gaps, which we turned into a checklist and split between us.
 - **Drafting the v1.0 changes.** It drafted the score-spread and grade-band lines in
-  `report`, the named default for `ranking --top`, the `remove-student` and `ranking` CLI
-  tests, the README and backlog updates, and the step that copies the example class into the
-  image. The release job in `check.yml` is the one from lab 18, copied as given.
+  `report`, the named default for `ranking --top`, the `rename-student` command, the
+  `remove-student`, `rename-student` and `ranking` CLI tests, the README and backlog
+  updates, and the step that copies the example class into the image. The release job in `check.yml` is the one from lab 18, copied as given.
 
 How we checked it: each AI-drafted change went through a pull request reviewed by a teammate
 other than its author, passed the same CI as everything else (ruff, `mypy --strict`, pytest,
