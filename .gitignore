@@ -17,3 +17,6 @@ economics.csv
 # local class data (may contain real names; the repo is public)
 gradebook-data/
 my-class/
+
+# secrets never go in the repository
+.env

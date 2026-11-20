@@ -65,3 +65,30 @@ def test_nan_typed_on_the_command_line_is_rejected(tmp_path: Path) -> None:
 
     assert exit_code == 1
     assert "score must be a finite number" in output
+
+
+def test_remove_student_deletes_them_and_their_grades(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Noa Ferrer")
+    run(tmp_path, "add-student", "Leo Martin")
+    run(tmp_path, "add-assignment", "Quiz", "10")
+    run(tmp_path, "record-grade", "Noa Ferrer", "Quiz", "8")
+    run(tmp_path, "record-grade", "Leo Martin", "Quiz", "6")
+
+    exit_code, output = run(tmp_path, "remove-student", "Noa Ferrer")
+
+    assert exit_code == 0
+    assert "Removed Noa Ferrer" in output
+    report = run(tmp_path, "report")[1]
+    assert "Noa Ferrer" not in report
+    assert "Leo Martin" in report
+    assert "Noa Ferrer" not in (tmp_path / "grades.csv").read_text()
+
+
+def test_remove_unknown_student_fails_cleanly(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Noa Ferrer")
+
+    exit_code, output = run(tmp_path, "remove-student", "Nobody")
+
+    assert exit_code == 1
+    assert "unknown student 'Nobody'" in output
+    assert "Noa Ferrer" in (tmp_path / "students.csv").read_text()
