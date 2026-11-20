@@ -121,25 +121,61 @@ bash scripts/check.sh
 
 ## Run with Docker
 
-You need Docker and nothing else. From the root of the repository:
+You need Docker and nothing else: no clone, no Python, no uv. Our release pipeline builds,
+checks and publishes the image to the GitHub Container Registry on every merge to `main`
+(tagged with the commit) and on every version tag (tagged `v1.0`, `v1.1`, ...).
+
+The image is private to the course organisation, so log in once first, with your GitHub
+username in lowercase and a personal access token (classic) with the `read:packages` scope as
+the password:
+
+```bash
+docker login ghcr.io -u <your-github-username>
+```
+
+Then:
+
+```bash
+docker pull ghcr.io/esade-swdev-2026/gradebook:v1.1
+docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 --help
+docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 report --data-dir examples/demo-class
+```
+
+The last command reports on the example class, which is inside the image.
+
+### Your own class, kept outside the container
+
+```bash
+docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 add-student "Marta Puig"
+docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 add-assignment "Midterm exam" 40
+docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 record-grade "Marta Puig" "Midterm exam" 7.5
+docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 report
+docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 report
+```
+
+Every `docker run` starts a new container and `--rm` deletes it afterwards, yet the fourth
+command still shows Marta: the class lives in the named volume `gradebook-data`, outside the
+image. The last command has no volume, so it starts from an empty class and says
+`No students yet`. `docker volume rm gradebook-data` deletes the class.
+
+The container can only write inside `/app/gradebook-data`. For a second class, use a
+subfolder: `--data-dir gradebook-data/my-class`. `export` must also write there, and you
+can print the file back out of the volume:
+
+```bash
+docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 export gradebook-data/report.csv
+docker run --rm -v gradebook-data:/app/gradebook-data --entrypoint cat ghcr.io/esade-swdev-2026/gradebook:v1.1 gradebook-data/report.csv
+```
+
+### Building the image yourself
+
+From the root of a clone, build it under a short name and use `gradebook` in place of the
+long image name above:
 
 ```bash
 docker build -t gradebook .
-docker run --rm gradebook --help
-docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "Marta Puig"
-docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-assignment "Midterm exam" 40
-docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Marta Puig" "Midterm exam" 7.5
-docker run --rm -v gradebook-data:/app/gradebook-data gradebook report
-docker run --rm -v gradebook-data:/app/gradebook-data gradebook export gradebook-data/report.csv
+docker run --rm gradebook report --data-dir examples/demo-class
 ```
-
-Every `docker run` starts a new container and `--rm` deletes it afterwards, yet the report
-still shows Marta: the class lives in the named volume `gradebook-data`, outside the image.
-`docker volume rm gradebook-data` deletes it.
-
-The container can only write inside `/app/gradebook-data`. For a second class, use a
-subfolder: `--data-dir gradebook-data/my-class`.
-`export` must also write inside it, e.g. `gradebook-data/report.csv`.
 
 ## Project structure
 
