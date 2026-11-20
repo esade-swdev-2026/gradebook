@@ -15,6 +15,7 @@ from gradebook.student_report import format_student_detail
 app = typer.Typer(help="A terminal gradebook for one class.")
 
 DEFAULT_DATA_DIR = Path("gradebook-data")
+DEFAULT_TOP_COUNT = 3
 
 DataDir = Annotated[
     Path,
@@ -125,7 +126,9 @@ def student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None:
 
 @app.command("ranking")
 def ranking_command(
-    top: Annotated[int, typer.Option("--top", help="How many positions to show.")] = 3,
+    top: Annotated[
+        int, typer.Option("--top", help="How many positions to show.")
+    ] = DEFAULT_TOP_COUNT,
     data_dir: DataDir = DEFAULT_DATA_DIR,
 ) -> None:
     """Show the students with the best current grade, best first."""

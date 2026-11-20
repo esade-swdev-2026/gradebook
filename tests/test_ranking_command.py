@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from gradebook.cli import app
+from gradebook.cli import DEFAULT_TOP_COUNT, app
 
 runner = CliRunner()
 DEMO_CLASS = Path(__file__).parent.parent / "examples" / "demo-class"
@@ -49,3 +49,13 @@ def test_ranking_with_a_top_larger_than_the_class_shows_everyone() -> None:
 
     assert result.exit_code == 0
     assert len(result.output.splitlines()) == 4
+
+
+def test_ranking_without_top_shows_the_default_number_of_students() -> None:
+    result = runner.invoke(app, ["ranking", "--data-dir", str(DEMO_CLASS)])
+
+    assert result.exit_code == 0
+    # four students have a grade, so the default top 3 leaves Iris (0.8) out
+    lines = result.output.splitlines()
+    assert len(lines) == DEFAULT_TOP_COUNT
+    assert all("Iris Soler" not in line for line in lines)
