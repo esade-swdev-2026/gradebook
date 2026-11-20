@@ -71,28 +71,32 @@ jobs:
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
           echo "SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
+      - name: Set up QEMU, to build for Apple Silicon too
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build the image
-        run: docker build --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t "$IMAGE:$SHA" .
-
-      - name: Push it, tagged with the commit
-        run: docker push "$IMAGE:$SHA"
+      - name: Build and push it, tagged with the commit
+        run: >-
+          docker buildx build
+          --platform linux/amd64,linux/arm64
+          --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+          -t "$IMAGE:$SHA" --push .
 
       - name: Push it, tagged with the version
         if: github.ref_type == 'tag'
-        run: |
-          docker tag "$IMAGE:$SHA" "$IMAGE:$GITHUB_REF_NAME"
-          docker push "$IMAGE:$GITHUB_REF_NAME"
+        run: docker buildx imagetools create -t "$IMAGE:$GITHUB_REF_NAME" "$IMAGE:$SHA"
 
       - name: Pull it back and run it
         run: |
-          docker image rm "$IMAGE:$SHA"
           published="$IMAGE:$SHA"
           if [ "$GITHUB_REF_TYPE" = tag ]; then
-            docker image rm "$IMAGE:$GITHUB_REF_NAME"
             published="$IMAGE:$GITHUB_REF_NAME"
           fi
+          docker buildx imagetools inspect "$published"
           docker pull "$published"
           docker run --rm "$published" --help
