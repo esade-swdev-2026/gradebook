@@ -1,3 +1,4 @@
+from gradebook.class_stats import ScoreRange, band_distribution, score_ranges
 from gradebook.coursework import total_weight
 from gradebook.grading import (
     assignment_summaries,
@@ -52,6 +53,20 @@ def format_assignment_row(summary: AssignmentSummary, student_count: int) -> str
     )
 
 
+def format_score_range_row(score_range: ScoreRange) -> str:
+    return (
+        f"{score_range.assignment:<{NAME_WIDTH}}"
+        f"{format_score(score_range.lowest):>{NUMBER_WIDTH}}"
+        f"{format_score(score_range.median_score):>{NUMBER_WIDTH}}"
+        f"{format_score(score_range.highest):>{NUMBER_WIDTH}}"
+    )
+
+
+def format_band_counts(counts: dict[str, int]) -> str:
+    """One line with how many students are in each band now, best band first."""
+    return "Students per band: " + ", ".join(f"{band} {count}" for band, count in counts.items())
+
+
 def format_grade_confirmation(
     grade: Grade, standing: StudentStanding, is_update: bool
 ) -> list[str]:
@@ -92,10 +107,20 @@ def format_report(gradebook: Gradebook) -> list[str]:
             format_assignment_row(summary, student_count)
             for summary in assignment_summaries(gradebook)
         )
+        lines.extend(
+            [
+                "",
+                f"{'Score spread':<{NAME_WIDTH}}{'Lowest':>{NUMBER_WIDTH}}"
+                f"{'Median':>{NUMBER_WIDTH}}{'Highest':>{NUMBER_WIDTH}}",
+                "-" * RULE_WIDTH,
+            ]
+        )
+        lines.extend(format_score_range_row(score_range) for score_range in score_ranges(gradebook))
 
     lines.extend(
         [
             "",
+            format_band_counts(band_distribution(standings)),
             f"Class average: {format_score(class_average(standings))}    "
             f"Passing right now: {passing_count(standings)}/{student_count}",
         ]
