@@ -5,7 +5,10 @@ weighted assignments, record scores on a 0–10 scale, and it tells you:
 
 - each student's **current weighted grade** and grade band (Fail, Pass, Very good, Excellent)
 - the **average score each student needs on the rest of the course to pass** (pass mark 5.0)
-- **class statistics**: the class average, how many are passing now, and the average per assignment
+- **class statistics**: the class average, how many are passing now, the average, lowest, median
+  and highest score per assignment, and how many students are in each grade band
+- a **ranking** of the best students, a **detail view** of one student, and an **export** of the
+  report to a CSV file you can open in a spreadsheet
 
 ## Installation
 
@@ -55,6 +58,8 @@ uv run gradebook record-grade "Marta Puig" "Midterm exam" 7.5 --data-dir my-clas
 uv run gradebook record-grade "Pol Serra" "Midterm exam" 3 --data-dir my-class
 uv run gradebook report --data-dir my-class
 uv run gradebook student "Pol Serra" --data-dir my-class
+uv run gradebook ranking --top 1 --data-dir my-class
+uv run gradebook export my-class-report.csv --data-dir my-class
 ```
 
 | Command | What it does |
@@ -65,6 +70,8 @@ uv run gradebook student "Pol Serra" --data-dir my-class
 | `record-grade STUDENT ASSIGNMENT SCORE` | Records a 0–10 score; running it again updates it |
 | `report` | Current grades, bands, what each student needs to pass, class statistics |
 | `student NAME` | One student's score on every assignment, current grade, and what they need to pass |
+| `ranking [--top N]` | The `N` students with the best current grade, best first (default 3; ties share a place) |
+| `export FILE` | Writes the class report (grade, band, what is needed to pass) to a CSV file |
 
 Run `uv run gradebook --help` or `uv run gradebook COMMAND --help` for details.
 
@@ -142,7 +149,11 @@ src/gradebook/
   validation.py  name, score and weight rules
   roster.py      add and remove students
   coursework.py  add assignments, record grades
-  grading.py     weighted grades, what is needed to pass, class statistics
+  grading.py     weighted grades, what is needed to pass, class averages
+  class_stats.py score spread per assignment, students per grade band
+  ranking.py     orders students by current grade, ties share a place
+  student_report.py  one student's detail view
+  export.py      the class report as rows of plain values, for the CSV export
   report.py      turns results into lines of text
   storage.py     reads and writes the CSV files    <- the only module touching files
   cli.py         typer commands                     <- the only module printing / exiting
@@ -150,3 +161,21 @@ src/gradebook/
 
 Everything except `storage.py` and `cli.py` takes plain data and returns plain data, which
 is why most tests need no files.
+
+## Use of AI
+
+We used Claude (Anthropic's AI assistant) in this project, and we say where:
+
+- **Containerizing (lab 16).** It explained layer caching, the non-root user and named
+  volumes, and drafted our first Dockerfile and `.dockerignore`, which we built and tested.
+- **Planning v1.0.** We asked it to compare the repository with the final rubric and the
+  course slides; it listed the gaps, which we turned into a checklist and split between us.
+- **Drafting the v1.0 changes.** It drafted the score-spread and grade-band lines in
+  `report`, the named default for `ranking --top`, the `remove-student` and `ranking` CLI
+  tests, the README and backlog updates, and the step that copies the example class into the
+  image. The release job in `check.yml` is the one from lab 18, copied as given.
+
+How we checked it: each AI-drafted change went through a pull request reviewed by a teammate
+other than its author, passed the same CI as everything else (ruff, `mypy --strict`, pytest,
+building and running the image), and was run by hand on the example class. Commits drafted
+with AI carry a `Co-Authored-By` line. We own every line we merged, whoever typed it.
