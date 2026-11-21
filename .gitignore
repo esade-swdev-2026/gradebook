@@ -8,8 +8,6 @@ build/
 .ruff_cache/
 .pytest_cache/
 .coverage
-class.csv
-economics.csv
 
 # macOS Finder files
 .DS_Store
