@@ -113,3 +113,14 @@ def test_the_same_student_cannot_be_added_twice_in_other_capitals(tmp_path: Path
     assert exit_code == 1
     assert "student 'ana ruiz' already exists as 'Ana Ruiz'" in output
     assert (tmp_path / "students.csv").read_text().splitlines() == ["name", "Ana Ruiz"]
+
+
+def test_a_file_given_as_data_dir_is_a_clear_error_not_an_empty_class(tmp_path: Path) -> None:
+    grades_file = tmp_path / "grades.csv"
+    grades_file.write_text("student,assignment,score\n")
+
+    exit_code, output = run(grades_file, "report")
+
+    assert exit_code == 1
+    assert "is a file, not a folder" in output
+    assert "No students yet" not in output

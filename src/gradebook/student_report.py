@@ -9,6 +9,7 @@ from gradebook.report import (
     NUMBER_WIDTH,
     RULE_WIDTH,
     format_needed_to_pass,
+    format_percent,
     format_score,
 )
 from gradebook.roster import student_exists
@@ -33,7 +34,7 @@ def format_student_detail(gradebook: Gradebook, raw_name: str) -> list[str]:
             score = NOT_AVAILABLE if grade is None else f"{grade.score:g}"
             lines.append(
                 f"{assignment.name:<{NAME_WIDTH}}"
-                f"{assignment.weight:>{NUMBER_WIDTH - 1}.0f}%"
+                f"{format_percent(assignment.weight):>{NUMBER_WIDTH}}"
                 f"{score:>{NUMBER_WIDTH}}"
             )
     else:
@@ -45,7 +46,7 @@ def format_student_detail(gradebook: Gradebook, raw_name: str) -> list[str]:
         [
             "",
             f"Current grade: {format_score(standing.current_grade)}{band}    "
-            f"Graded: {standing.graded_weight:g}% of the course",
+            f"Graded: {format_percent(standing.graded_weight)} of the course",
             f"Needs on the rest to pass: {format_needed_to_pass(standing.needed_to_pass)}",
         ]
     )

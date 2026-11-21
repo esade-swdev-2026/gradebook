@@ -20,6 +20,16 @@ PASS_SECURED = "secured"
 PASS_OUT_OF_REACH = "out of reach"
 
 
+def count_of(count: int, noun: str) -> str:
+    """'1 student', '2 students'."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+def format_percent(value: float) -> str:
+    """A weight as typed: 12.5% stays 12.5%, 40.0 is shown as 40%."""
+    return f"{value:g}%"
+
+
 def format_score(score: float | None) -> str:
     return NOT_AVAILABLE if score is None else f"{round_grade(score):.1f}"
 
@@ -38,7 +48,7 @@ def format_standing_row(standing: StudentStanding) -> str:
     band = NOT_AVAILABLE if standing.current_grade is None else grade_band(standing.current_grade)
     return (
         f"{standing.student:<{NAME_WIDTH}}"
-        f"{standing.graded_weight:>{NUMBER_WIDTH - 1}.0f}%"
+        f"{format_percent(standing.graded_weight):>{NUMBER_WIDTH}}"
         f"{format_score(standing.current_grade):>{NUMBER_WIDTH}}  "
         f"{band:<{BAND_WIDTH}}"
         f"{format_needed_to_pass(standing.needed_to_pass)}"
@@ -48,7 +58,7 @@ def format_standing_row(standing: StudentStanding) -> str:
 def format_assignment_row(summary: AssignmentSummary, student_count: int) -> str:
     return (
         f"{summary.assignment.name:<{NAME_WIDTH}}"
-        f"{summary.assignment.weight:>{NUMBER_WIDTH - 1}.0f}%"
+        f"{format_percent(summary.assignment.weight):>{NUMBER_WIDTH}}"
         f"{format_score(summary.average_score):>{NUMBER_WIDTH}}  "
         f"{summary.graded_count}/{student_count} graded"
     )
@@ -86,8 +96,9 @@ def format_report(gradebook: Gradebook) -> list[str]:
     standings = class_standings(gradebook)
     student_count = len(gradebook.students)
     lines = [
-        f"Class report: {student_count} students, {len(gradebook.assignments)} assignments "
-        f"({total_weight(gradebook.assignments):g}% of the course defined)",
+        f"Class report: {count_of(student_count, 'student')}, "
+        f"{count_of(len(gradebook.assignments), 'assignment')} "
+        f"({format_percent(total_weight(gradebook.assignments))} of the course defined)",
         "",
         f"{'Student':<{NAME_WIDTH}}{'Graded':>{NUMBER_WIDTH}}{'Current':>{NUMBER_WIDTH}}  "
         f"{'Band':<{BAND_WIDTH}}Needs on the rest to pass",
