@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 from gradebook.models import COURSE_TOTAL_WEIGHT, Assignment, Grade, Gradebook
 from gradebook.roster import student_exists
@@ -10,6 +10,16 @@ from gradebook.validation import (
     require_score,
     require_weight,
 )
+
+
+@dataclass(frozen=True)
+class RecordedGrade:
+    """What record_grade did: the updated gradebook, the grade it now holds, and the grade
+    it replaced (None if the student had no score for that assignment yet)."""
+
+    gradebook: Gradebook
+    grade: Grade
+    replaced: Grade | None
 
 
 def total_weight(assignments: list[Assignment]) -> float:
@@ -50,8 +60,8 @@ def add_assignment(gradebook: Gradebook, raw_name: str, weight: float) -> Gradeb
 
 def record_grade(
     gradebook: Gradebook, raw_student: str, raw_assignment: str, score: float
-) -> Gradebook:
-    """Set a student's score for an assignment, replacing any earlier score."""
+) -> RecordedGrade:
+    """Set a student's score for an assignment, replacing any earlier score in place."""
     student = require_name(raw_student, "student")
     assignment = require_name(raw_assignment, "assignment")
     require_score(score)
@@ -60,10 +70,12 @@ def record_grade(
     if find_assignment(gradebook.assignments, assignment) is None:
         raise ValueError(f"unknown assignment '{assignment}'. Add it first with add-assignment.")
 
-    other_grades = [
-        grade
-        for grade in gradebook.grades
-        if not (grade.student == student and grade.assignment == assignment)
-    ]
     new_grade = Grade(student=student, assignment=assignment, score=score)
-    return replace(gradebook, grades=[*other_grades, new_grade])
+    previous = find_grade(gradebook.grades, student, assignment)
+    if previous is None:
+        grades = [*gradebook.grades, new_grade]
+    else:
+        grades = [new_grade if grade == previous else grade for grade in gradebook.grades]
+    return RecordedGrade(
+        gradebook=replace(gradebook, grades=grades), grade=new_grade, replaced=previous
+    )

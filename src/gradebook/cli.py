@@ -3,7 +3,7 @@ from typing import Annotated, NoReturn
 
 import typer
 
-from gradebook.coursework import add_assignment, find_grade, record_grade
+from gradebook.coursework import add_assignment, record_grade
 from gradebook.grading import class_standings, student_standing
 from gradebook.models import Gradebook
 from gradebook.ranking import top_students
@@ -11,6 +11,7 @@ from gradebook.report import count_of, format_grade_confirmation, format_ranking
 from gradebook.roster import add_student, remove_student, rename_student
 from gradebook.storage import load_gradebook, save_gradebook, save_report_csv
 from gradebook.student_report import format_student_detail
+from gradebook.validation import clean_name
 
 app = typer.Typer(help="A terminal gradebook for one class.")
 
@@ -37,7 +38,7 @@ def add_student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> None
     except ValueError as error:
         _fail(error)
     _save(data_dir, updated)
-    typer.echo(f"Added {updated.students[-1]} to {data_dir}")
+    typer.echo(f"Added {clean_name(name)} to {data_dir}")
 
 
 @app.command("remove-student")
@@ -49,7 +50,7 @@ def remove_student_command(name: str, data_dir: DataDir = DEFAULT_DATA_DIR) -> N
     except ValueError as error:
         _fail(error)
     _save(data_dir, updated)
-    typer.echo(f"Removed {name.strip()} and their grades from {data_dir}")
+    typer.echo(f"Removed {clean_name(name)} and their grades from {data_dir}")
 
 
 @app.command("rename-student")
@@ -63,7 +64,7 @@ def rename_student_command(
     except ValueError as error:
         _fail(error)
     _save(data_dir, updated)
-    typer.echo(f"Renamed {old_name.strip()} to {new_name.strip()} in {data_dir}")
+    typer.echo(f"Renamed {clean_name(old_name)} to {clean_name(new_name)} in {data_dir}")
 
 
 @app.command("add-assignment")
@@ -79,8 +80,7 @@ def add_assignment_command(
     except ValueError as error:
         _fail(error)
     _save(data_dir, updated)
-    added = updated.assignments[-1]
-    typer.echo(f"Added {added.name} ({added.weight:g}% of the final grade)")
+    typer.echo(f"Added {clean_name(name)} ({weight:g}% of the final grade)")
 
 
 @app.command("record-grade")
@@ -93,15 +93,14 @@ def record_grade_command(
     """Record a student's score for an assignment, or update it if one exists."""
     gradebook = _load(data_dir)
     try:
-        updated = record_grade(gradebook, student, assignment, score)
+        recorded = record_grade(gradebook, student, assignment, score)
     except ValueError as error:
         _fail(error)
-    _save(data_dir, updated)
+    _save(data_dir, recorded.gradebook)
 
-    recorded = updated.grades[-1]
-    previous = find_grade(gradebook.grades, recorded.student, recorded.assignment)
-    standing = student_standing(updated, recorded.student)
-    for line in format_grade_confirmation(recorded, standing, is_update=previous is not None):
+    standing = student_standing(recorded.gradebook, recorded.grade.student)
+    is_update = recorded.replaced is not None
+    for line in format_grade_confirmation(recorded.grade, standing, is_update=is_update):
         typer.echo(line)
 
 
@@ -172,7 +171,3 @@ def _save(data_dir: Path, gradebook: Gradebook) -> None:
 def _fail(error: Exception) -> NoReturn:
     typer.echo(f"Error: {error}", err=True)
     raise typer.Exit(code=1) from error
-
-
-if __name__ == "__main__":
-    app()
