@@ -81,3 +81,8 @@ def test_record_grade_rejects_score_above_maximum(demo_gradebook: Gradebook) -> 
 
 def test_find_grade_returns_none_when_missing(demo_gradebook: Gradebook) -> None:
     assert find_grade(demo_gradebook.grades, "Leo Martin", "Final exam") is None
+
+
+def test_add_assignment_rejects_the_same_name_in_other_capitals(demo_gradebook: Gradebook) -> None:
+    with pytest.raises(ValueError, match="already exists as 'Midterm exam'"):
+        add_assignment(demo_gradebook, "midterm  EXAM", 5)

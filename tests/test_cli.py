@@ -103,3 +103,13 @@ def test_a_grade_shown_as_five_is_a_pass(tmp_path: Path) -> None:
     assert exit_code == 0
     assert "Current grade: 5.0 (Pass)" in output
     assert "Passing right now: 1/1" in run(tmp_path, "report")[1]
+
+
+def test_the_same_student_cannot_be_added_twice_in_other_capitals(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Ana Ruiz")
+
+    exit_code, output = run(tmp_path, "add-student", "ana  ruiz")
+
+    assert exit_code == 1
+    assert "student 'ana ruiz' already exists as 'Ana Ruiz'" in output
+    assert (tmp_path / "students.csv").read_text().splitlines() == ["name", "Ana Ruiz"]

@@ -3,12 +3,36 @@ import math
 from gradebook.models import COURSE_TOTAL_WEIGHT, MAX_SCORE, MIN_SCORE, Gradebook
 
 
+def clean_name(raw_name: str) -> str:
+    """The name without spaces around it, and with every run of spaces inside made one."""
+    return " ".join(raw_name.split())
+
+
 def require_name(raw_name: str, kind: str) -> str:
-    """Return the name without surrounding spaces, or raise if nothing is left."""
-    name = raw_name.strip()
+    """Return the cleaned name, or raise if nothing is left."""
+    name = clean_name(raw_name)
     if not name:
         raise ValueError(f"{kind} name cannot be empty.")
     return name
+
+
+def same_name(first: str, second: str) -> bool:
+    """Two names are the same if they differ only in capitals or spaces: a typo, not a person."""
+    return clean_name(first).casefold() == clean_name(second).casefold()
+
+
+def find_same_name(names: list[str], name: str) -> str | None:
+    """The name already in `names` that is the same as `name`, if there is one."""
+    for existing in names:
+        if same_name(existing, name):
+            return existing
+    return None
+
+
+def already_exists(kind: str, name: str, existing: str) -> str:
+    if existing == name:
+        return f"{kind} '{name}' already exists."
+    return f"{kind} '{name}' already exists as '{existing}'."
 
 
 # Weights like 0.4 + 64.4 + 35.2 add up to 100.00000000000001 in floating point.
@@ -83,8 +107,10 @@ def _require_valid_grades(gradebook: Gradebook) -> None:
 
 
 def _require_no_duplicates(names: list[str], kind: str) -> None:
-    seen: set[str] = set()
-    for name in names:
-        if name in seen:
+    for index, name in enumerate(names):
+        earlier = find_same_name(names[:index], name)
+        if earlier is None:
+            continue
+        if earlier == name:
             raise ValueError(f"{kind} '{name}' appears more than once.")
-        seen.add(name)
+        raise ValueError(f"{kind} '{name}' and '{earlier}' are the same name.")

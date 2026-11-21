@@ -1,7 +1,7 @@
 from dataclasses import replace
 
 from gradebook.models import Gradebook
-from gradebook.validation import require_name
+from gradebook.validation import already_exists, find_same_name, require_name
 
 
 def student_exists(gradebook: Gradebook, name: str) -> bool:
@@ -10,8 +10,9 @@ def student_exists(gradebook: Gradebook, name: str) -> bool:
 
 def add_student(gradebook: Gradebook, raw_name: str) -> Gradebook:
     name = require_name(raw_name, "student")
-    if student_exists(gradebook, name):
-        raise ValueError(f"student '{name}' already exists.")
+    existing = find_same_name(gradebook.students, name)
+    if existing is not None:
+        raise ValueError(already_exists("student", name, existing))
     return replace(gradebook, students=[*gradebook.students, name])
 
 
@@ -23,8 +24,11 @@ def rename_student(gradebook: Gradebook, raw_old_name: str, raw_new_name: str) -
         raise ValueError(f"unknown student '{old_name}'.")
     if new_name == old_name:
         raise ValueError(f"student '{old_name}' already has that name.")
-    if student_exists(gradebook, new_name):
-        raise ValueError(f"student '{new_name}' already exists.")
+    # Fixing the capitals of a name ("noa ferrer" -> "Noa Ferrer") is allowed.
+    other_students = [student for student in gradebook.students if student != old_name]
+    existing = find_same_name(other_students, new_name)
+    if existing is not None:
+        raise ValueError(already_exists("student", new_name, existing))
     return replace(
         gradebook,
         students=[new_name if student == old_name else student for student in gradebook.students],
