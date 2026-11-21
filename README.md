@@ -1,31 +1,41 @@
 # Gradebook
 
-Gradebook is a command-line tool for a teacher running one class. You add students and
+Gradebook is a command-line tool for a teacher running one class. You add your students and
 weighted assignments, record scores on a 0–10 scale, and it tells you:
 
-- each student's **current weighted grade** and grade band (Fail, Pass, Very good, Excellent)
-- the **average score each student needs on the rest of the course to pass** (pass mark 5.0)
-- **class statistics**: the class average, how many are passing now, the average, lowest, median
-  and highest score per assignment, and how many students are in each grade band
-- a **ranking** of the best students, a **detail view** of one student, and an **export** of the
-  report to a CSV file you can open in a spreadsheet
+- each student's **current grade** and band (Fail, Pass, Very good, Excellent)
+- the **average score each student needs on the rest of the course to pass**
+- **class statistics**: the class average, how many are passing, and the average, lowest,
+  median and highest score of each assignment
+- a **ranking** of the best students, a **detail view** of one student, and an **export** of
+  the report to a CSV file for a spreadsheet
 
-## Installation
+You can run it from the Docker image our pipeline publishes (all you need is Docker), or
+from source with uv.
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/). Then:
+## Run with Docker
+
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), running.
+
+The image lives in the GitHub Container Registry and is private to the course organisation.
+Log in once, with your GitHub username in lowercase and, as the password, a personal access
+token (classic) with the `read:packages` scope:
 
 ```bash
-git clone https://github.com/esade-swdev-2026/gradebook.git
-cd gradebook
-uv sync
+docker login ghcr.io -u <your-github-username>
 ```
 
-## First result in one command
-
-The repository ships a small example class (fictional students) in `examples/demo-class`:
+Download the image and give it a short local name, `gradebook`:
 
 ```bash
-uv run gradebook report --data-dir examples/demo-class
+docker pull ghcr.io/esade-swdev-2026/gradebook:v1.1
+docker tag ghcr.io/esade-swdev-2026/gradebook:v1.1 gradebook
+```
+
+The image ships with an example class of four fictional students. Ask for its report:
+
+```bash
+docker run --rm gradebook report --data-dir examples/demo-class
 ```
 
 ```text
@@ -37,183 +47,235 @@ Hugo Navarro                 30%     6.0  Pass       4.6
 Iris Soler                   60%     0.8  Fail       out of reach
 Leo Martin                   60%     4.8  Fail       5.4
 Noa Ferrer                   60%     8.8  Very good  secured
+
+Assignment                Weight Average
+------------------------------------------------------------------------
+Midterm exam                 30%     4.9  4/4 graded
+Group project                30%     5.0  3/4 graded
+Final exam                   40%       -  0/4 graded
+
+Score spread              Lowest  Median Highest
+------------------------------------------------------------------------
+Midterm exam                 1.0     5.0     8.5
+Group project                0.5     5.5     9.0
+Final exam                     -       -       -
+
+Students per band: Excellent 0, Very good 1, Pass 1, Fail 2
+Class average: 5.1    Passing right now: 2/4
+```
+
+Leo has 4.0 on the midterm and 5.5 on the project (30% each): 285 of the 500 points needed
+to pass. The final exam is worth the remaining 40%, so he needs (500 − 285) ÷ 40 = 5.4 on it.
+
+### Your own class, kept outside the container
+
+A class is kept as three CSV files (`students.csv`, `assignments.csv`, `grades.csv`) in a
+folder, `gradebook-data` by default. A container's own files are deleted together with it, so
+the folder lives in a Docker **named volume**, also called `gradebook-data`, which you attach
+to every command with `-v`:
+
+```bash
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "Marta Puig"
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "Pol Serra"
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-assignment "Midterm exam" 40
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-assignment "Final exam" 60
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Marta Puig" "Midterm exam" 7.5
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Pol Serra" "Midterm exam" 3
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook report
+```
+
+```text
+Class report: 2 students, 2 assignments (100% of the course defined)
+
+Student                   Graded Current  Band       Needs on the rest to pass
+------------------------------------------------------------------------
+Marta Puig                   40%     7.5  Very good  3.3
+Pol Serra                    40%     3.0  Fail       6.3
 ...
 ```
 
-Leo has 4.0 on the midterm and 5.5 on the project (30 % each), so he has 285 of the 500
-points needed to pass and must average 215 / 40 = 5.4 on the final exam.
-
-## Usage: your own class
-
-Every command takes `--data-dir`, the folder where your class is kept as three CSV files
-(`students.csv`, `assignments.csv`, `grades.csv`). It defaults to `gradebook-data`. The
-folder is created on the first write.
+Each `docker run` starts a new container, and `--rm` deletes it when the command ends. The
+class is still there for the next command because it lives in the volume, outside the
+container and outside the image. Without the volume, the same command starts from an empty
+class:
 
 ```bash
-uv run gradebook add-student "Marta Puig" --data-dir my-class
-uv run gradebook add-student "Pol Serra" --data-dir my-class
-uv run gradebook add-assignment "Midterm exam" 40 --data-dir my-class
-uv run gradebook add-assignment "Final exam" 60 --data-dir my-class
-uv run gradebook record-grade "Marta Puig" "Midterm exam" 7.5 --data-dir my-class
-uv run gradebook record-grade "Pol Serra" "Midterm exam" 3 --data-dir my-class
-uv run gradebook report --data-dir my-class
-uv run gradebook student "Pol Serra" --data-dir my-class
-uv run gradebook ranking --top 1 --data-dir my-class
-uv run gradebook export my-class-report.csv --data-dir my-class
-uv run gradebook rename-student "Pol Serra" "Pol Serra Vidal" --data-dir my-class
+docker run --rm gradebook report
 ```
+
+```text
+No students yet. Add one with: gradebook add-student NAME
+```
+
+To export the report, write the file into the volume, then print it from there:
+
+```bash
+docker run --rm -v gradebook-data:/app/gradebook-data gradebook export gradebook-data/report.csv
+docker run --rm -v gradebook-data:/app/gradebook-data --entrypoint cat gradebook gradebook-data/report.csv
+```
+
+```text
+student,graded_percent,current_grade,band,needed_to_pass
+Marta Puig,40,7.50,Very good,3.33
+Pol Serra,40,3.00,Fail,6.33
+```
+
+`docker volume rm gradebook-data` deletes the class. For a second class, use another volume
+name, for example `-v economics:/app/gradebook-data`.
+
+## Run from source
+
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/). Clone the repository
+and install:
+
+```bash
+git clone https://github.com/esade-swdev-2026/gradebook.git
+cd gradebook
+uv sync
+```
+
+The first result, the same example class as above:
+
+```bash
+uv run gradebook report --data-dir examples/demo-class
+```
+
+Every command works the same way, with `uv run gradebook` in place of
+`docker run --rm -v gradebook-data:/app/gradebook-data gradebook`. The class is then kept in
+the folder `gradebook-data` in the current directory:
+
+```bash
+uv run gradebook add-student "Marta Puig"
+uv run gradebook report
+```
+
+`gradebook-data/` is git-ignored, so a real class kept there never ends up in the repository.
+
+## Commands
+
+The commands are the same however you run Gradebook. Write them after
+`docker run --rm -v gradebook-data:/app/gradebook-data gradebook` (Docker) or after
+`uv run gradebook` (from source), for example `... report` or `... student "Pol Serra"`.
 
 | Command | What it does |
 |---|---|
 | `add-student NAME` | Adds a student to the class |
-| `rename-student OLD NEW` | Renames a student, keeping all of their grades |
+| `rename-student OLD NEW` | Renames a student and keeps all of their grades |
 | `remove-student NAME` | Removes a student and all of their grades |
 | `add-assignment NAME WEIGHT` | Adds an assignment worth `WEIGHT` % of the final grade |
-| `record-grade STUDENT ASSIGNMENT SCORE` | Records a 0–10 score; running it again updates it |
-| `report` | Current grades, bands, what each student needs to pass, class statistics |
-| `student NAME` | One student's score on every assignment, current grade, and what they need to pass |
-| `ranking [--top N]` | The `N` students with the best current grade, best first (default 3; ties share a place) |
-| `export FILE` | Writes the class report (grade, band, what is needed to pass) to a CSV file |
+| `record-grade STUDENT ASSIGNMENT SCORE` | Records a score from 0 to 10; recording it again replaces it |
+| `report` | Every student's grade, band and what they need to pass, plus class statistics |
+| `student NAME` | One student's score on every assignment, their grade and what they need |
+| `ranking [--top N]` | The `N` best students by current grade (default 3; ties share a place) |
+| `export FILE` | Writes the report to a CSV file |
 
-Run `uv run gradebook --help` or `uv run gradebook COMMAND --help` for details.
+Every command takes `--data-dir FOLDER` to use another class folder. `--help` after any
+command explains it.
 
-### Grading rules
+## Grading rules
 
-- Scores go from 0 to 10. The passing grade is 5.0.
-- Assignment weights are percentages of the final grade; together they cannot exceed 100.
-- **Current grade** = weighted average of the work graded so far.
-- **Needs on the rest to pass** = (5.0 × 100 − points earned) ÷ weight not yet graded.
-  `secured` means the student passes even with 0 on everything left; `out of reach` means
-  they would need more than 10.
-- Bands: 9.0–10 Excellent · 7.0–8.9 Very good · 5.0–6.9 Pass · below 5.0 Fail.
+- Scores go from 0 to 10, and a student passes with 5.0.
+- Each assignment is worth a percentage of the final grade. Together they cannot exceed 100%.
+- The **current grade** is the weighted average of the work graded so far.
+- **Needs on the rest to pass** = (5.0 × 100 − points earned) ÷ the percentage not yet
+  graded. `secured` means the student passes even with 0 on everything left; `out of reach`
+  means they would need more than 10.
+- Grades are shown with one decimal, rounded halves up (4.95 becomes 5.0), and the band
+  follows the grade as shown: below 5.0 Fail, 5.0–6.9 Pass, 7.0–8.9 Very good, 9.0–10
+  Excellent.
 
-### Errors
+## When something is wrong
 
-Bad input (an empty name, an unknown student, a score of 11, a weight that would push the
-total over 100, a damaged CSV file) prints a message on stderr and exits with code 1:
+Bad input never crashes the program. It prints what is wrong and exits with a non-zero
+code:
 
-```bash
-uv run gradebook record-grade "Pol Serra" "Midterm exam" 11 --data-dir my-class
-# Error: score must be between 0 and 10, got 11.
+```text
+$ docker run --rm -v gradebook-data:/app/gradebook-data gradebook record-grade "Pol Serra" "Midterm exam" 11
+Error: score must be between 0 and 10, got 11.
+
+$ docker run --rm -v gradebook-data:/app/gradebook-data gradebook add-student "marta  puig"
+Error: student 'marta puig' already exists as 'Marta Puig'.
 ```
 
-The CSV files can be edited by hand, so every command checks them on load with the same
-rules. A class folder is **rejected, never silently repaired**, if it contains:
+A new student or assignment whose name differs from an existing one only in capitals or
+spaces is refused, so a typo cannot create a second "Marta Puig".
 
-- a score or weight that is not a number, is `nan`/`inf`, or is out of range
-- a duplicate student, a duplicate assignment, or two grades for the same student and assignment
-- a grade for a student or assignment that does not exist
-- assignment weights that add up to more than 100
+The CSV files can be edited by hand, so every command checks them when it loads them. A class
+is **rejected, never silently repaired**, if a file contains a score or weight that is not a
+number or is out of range, the same student or assignment twice, a grade for a student or
+assignment that does not exist, or weights adding up to more than 100%. The error names the
+folder or file and the problem, and nothing is written until you fix it.
 
-The error names the folder and the problem, and nothing is written until you fix the file.
+## Development
 
-## Running the checks
+### Checks
 
-The same four checks CI runs:
-
-```bash
-uv run ruff check . && uv run ruff format --check . && uv run mypy src tests && uv run pytest
-```
-
-or, in one script:
+The same checks CI runs on every push (lint, formatting, strict types, tests):
 
 ```bash
 bash scripts/check.sh
 ```
 
-## Run with Docker
-
-You need Docker and nothing else: no clone, no Python, no uv. Our release pipeline builds,
-checks and publishes the image to the GitHub Container Registry on every merge to `main`
-(tagged with the commit) and on every version tag (tagged `v1.0`, `v1.1`, ...).
-
-The image is private to the course organisation, so log in once first, with your GitHub
-username in lowercase and a personal access token (classic) with the `read:packages` scope as
-the password:
-
-```bash
-docker login ghcr.io -u <your-github-username>
-```
-
-Then:
-
-```bash
-docker pull ghcr.io/esade-swdev-2026/gradebook:v1.1
-docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 --help
-docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 report --data-dir examples/demo-class
-```
-
-The last command reports on the example class, which is inside the image.
-
-### Your own class, kept outside the container
-
-```bash
-docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 add-student "Marta Puig"
-docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 add-assignment "Midterm exam" 40
-docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 record-grade "Marta Puig" "Midterm exam" 7.5
-docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 report
-docker run --rm ghcr.io/esade-swdev-2026/gradebook:v1.1 report
-```
-
-Every `docker run` starts a new container and `--rm` deletes it afterwards, yet the fourth
-command still shows Marta: the class lives in the named volume `gradebook-data`, outside the
-image. The last command has no volume, so it starts from an empty class and says
-`No students yet`. `docker volume rm gradebook-data` deletes the class.
-
-The container can only write inside `/app/gradebook-data`. For a second class, use a
-subfolder: `--data-dir gradebook-data/my-class`. `export` must also write there, and you
-can print the file back out of the volume:
-
-```bash
-docker run --rm -v gradebook-data:/app/gradebook-data ghcr.io/esade-swdev-2026/gradebook:v1.1 export gradebook-data/report.csv
-docker run --rm -v gradebook-data:/app/gradebook-data --entrypoint cat ghcr.io/esade-swdev-2026/gradebook:v1.1 gradebook-data/report.csv
-```
-
-### Building the image yourself
-
-From the root of a clone, build it under a short name and use `gradebook` in place of the
-long image name above:
+### Build the image yourself
 
 ```bash
 docker build -t gradebook .
 docker run --rm gradebook report --data-dir examples/demo-class
 ```
 
+The `release` job in `.github/workflows/check.yml` does this for every merge to `main` and
+every version tag, for Intel and Apple Silicon, once the checks are green. It publishes the
+image to `ghcr.io/esade-swdev-2026/gradebook`, tagged with the commit and, for a tag such as
+`v1.1`, with the version.
+
 ## Project structure
 
 ```text
-src/gradebook/
-  models.py      dataclasses and grading constants (scale, pass mark, bands)
-  validation.py  name, score and weight rules
-  roster.py      add, rename and remove students
-  coursework.py  add assignments, record grades
-  grading.py     weighted grades, what is needed to pass, class averages
-  class_stats.py score spread per assignment, students per grade band
-  ranking.py     orders students by current grade, ties share a place
-  student_report.py  one student's detail view
-  export.py      the class report as rows of plain values, for the CSV export
-  report.py      turns results into lines of text
-  storage.py     reads and writes the CSV files    <- the only module touching files
-  cli.py         typer commands                     <- the only module printing / exiting
+src/gradebook/       the package (below)
+tests/               one test file per module, plus tests of each command
+examples/demo-class/ the fictional example class
+scripts/check.sh     the checks CI runs
+Dockerfile           the image; .dockerignore keeps .venv, .git and caches out of it
+.github/workflows/   check.yml: the checks, building the image, and the release
+pyproject.toml       dependencies, the gradebook command, ruff, mypy and pytest settings
+uv.lock              the exact versions of every dependency
 ```
 
-Everything except `storage.py` and `cli.py` takes plain data and returns plain data, which
-is why most tests need no files.
+Inside the package:
+
+```text
+src/gradebook/
+  models.py          dataclasses (Assignment, Grade, Gradebook) and the grading constants
+  validation.py      the rules for names, scores, weights and whole class files
+  roster.py          add, rename and remove students
+  coursework.py      add assignments, record grades
+  grading.py         current grades, rounding, bands, what is needed to pass
+  class_stats.py     score spread per assignment, students per band
+  ranking.py         orders students by grade; ties share a place
+  report.py          turns the results into lines of text
+  student_report.py  one student's detail view
+  export.py          the report as rows for the CSV export
+  storage.py         reads and writes the CSV files    <- the only module that touches files
+  cli.py             the commands                       <- the only module that prints or exits
+```
+
+The core works on plain dataclasses and returns plain data; pandas is used only in
+`storage.py`, to read and write the CSV files. That is why most tests need no files, and
+why the storage could change without touching the grading.
+
+## Product backlog
+
+The backlog we planned the project with, the status of each item and our Definition of Done
+are in [`backlog-brief.md`](backlog-brief.md).
 
 ## Use of AI
 
-We used Claude (Anthropic's AI assistant) in this project, and we say where:
+We used Claude throughout the project. Mostly it helped us understand concepts from class and
+explore possible solutions, but we also used it to review our code, find errors, failing CI
+runs and merge problems during development.
 
-- **Containerizing (lab 16).** It explained layer caching, the non-root user and named
-  volumes, and drafted our first Dockerfile and `.dockerignore`, which we built and tested.
-- **Planning v1.0.** We asked it to compare the repository with the final rubric and the
-  course slides; it listed the gaps, which we turned into a checklist and split between us.
-- **Drafting the v1.0 changes.** It drafted the score-spread and grade-band lines in
-  `report`, the named default for `ranking --top`, the `rename-student` command, the
-  `remove-student`, `rename-student` and `ranking` CLI tests, the README and backlog
-  updates, and the step that copies the example class into the image. The release job in `check.yml` is the one from lab 18, copied as given.
-
-How we checked it: each AI-drafted change went through a pull request reviewed by a teammate
-other than its author, passed the same CI as everything else (ruff, `mypy --strict`, pytest,
-building and running the image), and was run by hand on the example class. Commits drafted
-with AI carry a `Co-Authored-By` line. We own every line we merged, whoever typed it.
+AI suggestions were treated as guidance rather than final solutions, we discussed and
+evaluated proposed changes as a group, some were drafted by Claude, and every one was applied
+by one of us, checked through the tests, and reviewed by another member in a pull request.
+All final implementation decisions and submitted code were reviewed and approved by our team,
+and we take responsibility for all of it.
