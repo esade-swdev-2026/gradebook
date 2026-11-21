@@ -92,3 +92,14 @@ def test_remove_unknown_student_fails_cleanly(tmp_path: Path) -> None:
     assert exit_code == 1
     assert "unknown student 'Nobody'" in output
     assert "Noa Ferrer" in (tmp_path / "students.csv").read_text()
+
+
+def test_a_grade_shown_as_five_is_a_pass(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Ana Ruiz")
+    run(tmp_path, "add-assignment", "Exam", "100")
+
+    exit_code, output = run(tmp_path, "record-grade", "Ana Ruiz", "Exam", "4.96")
+
+    assert exit_code == 0
+    assert "Current grade: 5.0 (Pass)" in output
+    assert "Passing right now: 1/1" in run(tmp_path, "report")[1]

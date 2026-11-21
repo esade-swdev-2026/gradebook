@@ -6,6 +6,7 @@ from gradebook.grading import (
     class_standings,
     grade_band,
     passing_count,
+    round_grade,
 )
 from gradebook.models import MAX_SCORE, AssignmentSummary, Grade, Gradebook, StudentStanding
 from gradebook.ranking import RankedStudent
@@ -20,7 +21,7 @@ PASS_OUT_OF_REACH = "out of reach"
 
 
 def format_score(score: float | None) -> str:
-    return NOT_AVAILABLE if score is None else f"{score:.1f}"
+    return NOT_AVAILABLE if score is None else f"{round_grade(score):.1f}"
 
 
 def format_needed_to_pass(needed: float | None) -> str:
@@ -30,7 +31,7 @@ def format_needed_to_pass(needed: float | None) -> str:
         return PASS_SECURED
     if needed > MAX_SCORE:
         return PASS_OUT_OF_REACH
-    return f"{needed:.1f}"
+    return format_score(needed)
 
 
 def format_standing_row(standing: StudentStanding) -> str:
@@ -132,4 +133,7 @@ def format_ranking(ranked: list[RankedStudent]) -> list[str]:
     """One line per student: position, name and current grade, best first."""
     if not ranked:
         return ["No student has a grade yet."]
-    return [f"{r.position:>3}. {r.student:<{NAME_WIDTH}} {r.current_grade:.1f}" for r in ranked]
+    return [
+        f"{r.position:>3}. {r.student:<{NAME_WIDTH}} {format_score(r.current_grade)}"
+        for r in ranked
+    ]

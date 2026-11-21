@@ -1,7 +1,10 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 from gradebook.coursework import find_assignment
 from gradebook.models import (
     COURSE_TOTAL_WEIGHT,
     GRADE_BANDS,
+    GRADE_DECIMALS,
     PASSING_GRADE,
     Assignment,
     AssignmentSummary,
@@ -57,15 +60,29 @@ def needed_to_pass(student_grades: list[Grade], assignments: list[Assignment]) -
     return max(points_needed / remaining_weight, 0.0)
 
 
+def round_grade(value: float) -> float:
+    """Round a grade the way it is written down: one decimal, halves up (4.95 -> 5.0).
+
+    Plain float rounding would show 8.95 as 8.9, because 8.95 is stored as 8.9499...
+    Going through the decimal text of the number avoids that.
+    """
+    step = Decimal(1).scaleb(-GRADE_DECIMALS)
+    return float(Decimal(str(value)).quantize(step, rounding=ROUND_HALF_UP))
+
+
 def grade_band(score: float) -> str:
+    """The band of the grade as shown, so that a grade shown as 5.0 is never a Fail."""
+    shown = round_grade(score)
     for band in GRADE_BANDS:
-        if score >= band.minimum_score:
+        if shown >= band.minimum_score:
             return band.label
     raise ValueError(f"score {score:g} is below every grade band.")
 
 
 def is_passing(standing: StudentStanding) -> bool:
-    return standing.current_grade is not None and standing.current_grade >= PASSING_GRADE
+    if standing.current_grade is None:
+        return False
+    return round_grade(standing.current_grade) >= PASSING_GRADE
 
 
 def student_standing(gradebook: Gradebook, student: str) -> StudentStanding:
