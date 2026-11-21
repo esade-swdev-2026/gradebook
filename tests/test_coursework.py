@@ -1,7 +1,7 @@
 import pytest
 
 from gradebook.coursework import add_assignment, find_grade, record_grade, total_weight
-from gradebook.models import Assignment, Gradebook
+from gradebook.models import Assignment, Grade, Gradebook
 
 
 def test_total_weight_of_no_assignments_is_zero() -> None:
@@ -47,21 +47,28 @@ def test_add_assignment_rejects_zero_weight() -> None:
 
 
 def test_record_grade_adds_a_new_grade(demo_gradebook: Gradebook) -> None:
-    updated = record_grade(demo_gradebook, "Leo Martin", "Final exam", 6.5)
+    recorded = record_grade(demo_gradebook, "Leo Martin", "Final exam", 6.5)
 
-    grade = find_grade(updated.grades, "Leo Martin", "Final exam")
-    assert grade is not None
-    assert grade.score == 6.5
-    assert len(updated.grades) == len(demo_gradebook.grades) + 1
+    grade = find_grade(recorded.gradebook.grades, "Leo Martin", "Final exam")
+    assert grade == Grade("Leo Martin", "Final exam", 6.5)
+    assert recorded.grade == grade
+    assert recorded.replaced is None
+    assert len(recorded.gradebook.grades) == len(demo_gradebook.grades) + 1
 
 
-def test_record_grade_replaces_an_existing_grade(demo_gradebook: Gradebook) -> None:
-    updated = record_grade(demo_gradebook, "Leo Martin", "Midterm exam", 7.0)
+def test_record_grade_replaces_an_existing_grade_in_place(demo_gradebook: Gradebook) -> None:
+    recorded = record_grade(demo_gradebook, "Leo Martin", "Midterm exam", 7.0)
 
-    grade = find_grade(updated.grades, "Leo Martin", "Midterm exam")
-    assert grade is not None
-    assert grade.score == 7.0
-    assert len(updated.grades) == len(demo_gradebook.grades)
+    assert recorded.grade == Grade("Leo Martin", "Midterm exam", 7.0)
+    assert recorded.replaced == Grade("Leo Martin", "Midterm exam", 4.0)
+    position = demo_gradebook.grades.index(Grade("Leo Martin", "Midterm exam", 4.0))
+    assert recorded.gradebook.grades[position] == recorded.grade
+    assert len(recorded.gradebook.grades) == len(demo_gradebook.grades)
+
+
+def test_record_grade_cleans_the_names(demo_gradebook: Gradebook) -> None:
+    recorded = record_grade(demo_gradebook, "  Leo   Martin ", " Final exam", 6.5)
+    assert recorded.grade == Grade("Leo Martin", "Final exam", 6.5)
 
 
 def test_record_grade_rejects_unknown_student(demo_gradebook: Gradebook) -> None:

@@ -124,3 +124,17 @@ def test_a_file_given_as_data_dir_is_a_clear_error_not_an_empty_class(tmp_path: 
     assert exit_code == 1
     assert "is a file, not a folder" in output
     assert "No students yet" not in output
+
+
+def test_updating_one_grade_confirms_that_grade_not_another(tmp_path: Path) -> None:
+    for name in ("Ana Ruiz", "Bo Li"):
+        run(tmp_path, "add-student", name)
+    run(tmp_path, "add-assignment", "Quiz", "10")
+    run(tmp_path, "record-grade", "Ana Ruiz", "Quiz", "4")
+    run(tmp_path, "record-grade", "Bo Li", "Quiz", "9")
+
+    exit_code, output = run(tmp_path, "record-grade", "Ana Ruiz", "Quiz", "6")
+
+    assert exit_code == 0
+    assert "Updated 6 for Ana Ruiz on Quiz." in output
+    assert "Current grade: 6.0 (Pass)" in output
