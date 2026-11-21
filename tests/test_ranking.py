@@ -72,3 +72,9 @@ def test_top_students_with_more_than_the_class_returns_everyone() -> None:
 def test_top_students_rejects_a_count_below_one() -> None:
     with pytest.raises(ValueError, match="at least 1"):
         top_students([standing("Noa Ferrer", 9.0)], 0)
+
+
+def test_grades_that_look_the_same_share_a_position() -> None:
+    # 8.94 and 8.86 are both shown as 8.9, so neither can be above the other
+    ranked = rank_students([standing("Noa Ferrer", 8.94), standing("Leo Martin", 8.86)])
+    assert [(r.position, r.student) for r in ranked] == [(1, "Leo Martin"), (1, "Noa Ferrer")]

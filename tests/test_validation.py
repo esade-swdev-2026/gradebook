@@ -8,11 +8,22 @@ from gradebook.validation import (
     require_score,
     require_valid_gradebook,
     require_weight,
+    same_name,
 )
 
 
 def test_require_name_strips_surrounding_spaces() -> None:
     assert require_name("  Noa Ferrer  ", "student") == "Noa Ferrer"
+
+
+def test_require_name_makes_runs_of_spaces_inside_one() -> None:
+    assert require_name("Noa   Ferrer", "student") == "Noa Ferrer"
+
+
+@pytest.mark.parametrize("variant", ["noa ferrer", "NOA FERRER", " Noa  Ferrer "])
+def test_names_that_differ_only_in_capitals_or_spaces_are_the_same(variant: str) -> None:
+    assert same_name("Noa Ferrer", variant)
+    assert not same_name("Noa Ferrer", "Noa Ferrero")
 
 
 @pytest.mark.parametrize("blank", ["", "   ", "\t"])
@@ -104,3 +115,9 @@ def test_decimal_weights_totalling_exactly_100_are_valid() -> None:
     assignments = [Assignment("Quiz", 0.4), Assignment("Midterm", 64.4), Assignment("Final", 35.2)]
     gradebook = Gradebook(assignments=assignments)
     assert require_valid_gradebook(gradebook) == gradebook
+
+
+def test_a_file_with_the_same_student_in_other_capitals_is_rejected() -> None:
+    gradebook = Gradebook(students=["Ana Ruiz", "ana ruiz"])
+    with pytest.raises(ValueError, match="student 'ana ruiz' and 'Ana Ruiz' are the same name"):
+        require_valid_gradebook(gradebook)

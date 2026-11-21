@@ -3,7 +3,9 @@ from dataclasses import replace
 from gradebook.models import COURSE_TOTAL_WEIGHT, Assignment, Grade, Gradebook
 from gradebook.roster import student_exists
 from gradebook.validation import (
+    already_exists,
     exceeds_course_weight,
+    find_same_name,
     require_name,
     require_score,
     require_weight,
@@ -31,8 +33,9 @@ def find_grade(grades: list[Grade], student: str, assignment: str) -> Grade | No
 def add_assignment(gradebook: Gradebook, raw_name: str, weight: float) -> Gradebook:
     name = require_name(raw_name, "assignment")
     require_weight(weight)
-    if find_assignment(gradebook.assignments, name) is not None:
-        raise ValueError(f"assignment '{name}' already exists.")
+    existing = find_same_name([assignment.name for assignment in gradebook.assignments], name)
+    if existing is not None:
+        raise ValueError(already_exists("assignment", name, existing))
 
     if exceeds_course_weight(total_weight(gradebook.assignments) + weight):
         weight_left = COURSE_TOTAL_WEIGHT - total_weight(gradebook.assignments)

@@ -80,3 +80,26 @@ def test_rename_to_the_same_name_is_an_error(demo_gradebook: Gradebook) -> None:
 def test_rename_to_an_empty_name_is_an_error(demo_gradebook: Gradebook) -> None:
     with pytest.raises(ValueError, match="new student name cannot be empty"):
         rename_student(demo_gradebook, "Noa Ferrer", "   ")
+
+
+@pytest.mark.parametrize("variant", ["noa ferrer", "NOA FERRER", "Noa  ferrer"])
+def test_add_student_rejects_the_same_name_in_other_capitals_or_spaces(variant: str) -> None:
+    with pytest.raises(ValueError, match="already exists as 'Noa Ferrer'"):
+        add_student(Gradebook(students=["Noa Ferrer"]), variant)
+
+
+def test_add_student_makes_runs_of_spaces_inside_one() -> None:
+    assert add_student(Gradebook(), "Leo   Martin").students == ["Leo Martin"]
+
+
+def test_rename_can_fix_the_capitals_of_a_name(demo_gradebook: Gradebook) -> None:
+    misspelled = rename_student(demo_gradebook, "Noa Ferrer", "noa ferrer")
+    fixed = rename_student(misspelled, "noa ferrer", "Noa Ferrer")
+    assert fixed == demo_gradebook
+
+
+def test_rename_to_another_student_in_other_capitals_is_an_error(
+    demo_gradebook: Gradebook,
+) -> None:
+    with pytest.raises(ValueError, match="already exists as 'Leo Martin'"):
+        rename_student(demo_gradebook, "Noa Ferrer", "leo martin")

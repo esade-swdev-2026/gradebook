@@ -45,3 +45,16 @@ def test_class_without_assignments_says_so(demo_gradebook: Gradebook) -> None:
     text = "\n".join(format_student_detail(empty_course, "Noa Ferrer"))
     assert "No assignments yet" in text
     assert "Current grade: -" in text
+
+
+def test_detail_shows_a_score_exactly_as_it_was_typed(demo_gradebook: Gradebook) -> None:
+    gradebook = replace(
+        demo_gradebook,
+        grades=[replace(demo_gradebook.grades[0], score=9.25), *demo_gradebook.grades[1:]],
+    )
+    midterm_row = next(
+        line
+        for line in format_student_detail(gradebook, "Noa Ferrer")
+        if line.startswith("Midterm exam")
+    )
+    assert midterm_row.split()[-1] == "9.25"

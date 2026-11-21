@@ -4,6 +4,7 @@ MIN_SCORE = 0.0
 MAX_SCORE = 10.0
 PASSING_GRADE = 5.0
 COURSE_TOTAL_WEIGHT = 100.0
+GRADE_DECIMALS = 1  # grades are shown, and judged, rounded to one decimal
 
 
 @dataclass(frozen=True)

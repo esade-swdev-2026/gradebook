@@ -1,11 +1,16 @@
+import pytest
+
 from gradebook.class_stats import ScoreRange
-from gradebook.models import Grade, Gradebook, StudentStanding
+from gradebook.models import Assignment, Grade, Gradebook, StudentStanding
+from gradebook.ranking import RankedStudent
 from gradebook.report import (
     PASS_OUT_OF_REACH,
     PASS_SECURED,
+    count_of,
     format_band_counts,
     format_grade_confirmation,
     format_needed_to_pass,
+    format_ranking,
     format_report,
     format_score,
     format_score_range_row,
@@ -14,6 +19,21 @@ from gradebook.report import (
 
 def test_format_score_rounds_to_one_decimal() -> None:
     assert format_score(4.75) == "4.8"
+
+
+@pytest.mark.parametrize(("score", "shown"), [(8.95, "9.0"), (9.25, "9.3"), (4.96, "5.0")])
+def test_format_score_rounds_halves_up(score: float, shown: str) -> None:
+    # plain float formatting shows 8.95 as 8.9 and 9.25 as 9.2
+    assert format_score(score) == shown
+
+
+def test_confirmation_band_matches_the_grade_shown() -> None:
+    grade = Grade(student="Ana Ruiz", assignment="Exam", score=4.96)
+    standing = StudentStanding(
+        "Ana Ruiz", graded_weight=100.0, current_grade=4.96, needed_to_pass=None
+    )
+    lines = format_grade_confirmation(grade, standing, is_update=False)
+    assert lines[1] == "Current grade: 5.0 (Pass)"
 
 
 def test_format_score_of_missing_grade_is_a_dash() -> None:
@@ -94,3 +114,31 @@ def test_report_without_assignments_has_no_score_spread() -> None:
 
     assert "Score spread" not in report
     assert "Students per band: Excellent 0, Very good 0, Pass 0, Fail 0" in report
+
+
+def test_ranking_rounds_the_grade_like_everywhere_else() -> None:
+    ranked = [RankedStudent(position=1, student="Bo Li", current_grade=8.95)]
+    assert format_ranking(ranked)[0].endswith("9.0")
+
+
+def test_report_says_one_student_and_one_assignment() -> None:
+    gradebook = Gradebook(students=["Ana Ruiz"], assignments=[Assignment("Quiz", 10.0)])
+    assert format_report(gradebook)[0].startswith("Class report: 1 student, 1 assignment (10%")
+
+
+def test_report_shows_weights_as_typed() -> None:
+    gradebook = Gradebook(
+        students=["Ana Ruiz"],
+        assignments=[Assignment("Lab 1", 12.5), Assignment("Lab 2", 37.5)],
+    )
+    report = "\n".join(format_report(gradebook))
+    assert "12.5%" in report
+    assert "37.5%" in report
+    assert "(50% of the course defined)" in report
+
+
+@pytest.mark.parametrize(
+    ("count", "text"), [(0, "0 students"), (1, "1 student"), (2, "2 students")]
+)
+def test_count_of(count: int, text: str) -> None:
+    assert count_of(count, "student") == text

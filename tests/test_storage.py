@@ -36,3 +36,10 @@ def test_nan_score_in_a_file_is_rejected_on_load(tmp_path: Path, demo_gradebook:
 
     with pytest.raises(ValueError, match="invalid data: score must be a finite number"):
         load_gradebook(tmp_path)
+
+
+def test_a_file_given_as_the_class_folder_is_a_clear_error(tmp_path: Path) -> None:
+    grades_file = tmp_path / "grades.csv"
+    grades_file.write_text("student,assignment,score\n")
+    with pytest.raises(ValueError, match="grades.csv is a file, not a folder"):
+        load_gradebook(grades_file)

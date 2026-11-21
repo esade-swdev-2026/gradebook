@@ -8,8 +8,10 @@ from gradebook.grading import (
     grade_band,
     graded_weight,
     grades_of_student,
+    is_passing,
     needed_to_pass,
     passing_count,
+    round_grade,
     student_standing,
 )
 from gradebook.models import Assignment, Grade, Gradebook, StudentStanding
@@ -106,17 +108,34 @@ def test_needed_to_pass_counts_assignments_not_yet_created() -> None:
     ("score", "band"),
     [
         (0.0, "Fail"),
-        (4.99, "Fail"),
+        (4.94, "Fail"),
+        (4.95, "Pass"),
         (5.0, "Pass"),
-        (6.99, "Pass"),
-        (7.0, "Very good"),
-        (8.99, "Very good"),
-        (9.0, "Excellent"),
+        (6.94, "Pass"),
+        (6.95, "Very good"),
+        (8.94, "Very good"),
+        (8.95, "Excellent"),
         (10.0, "Excellent"),
     ],
 )
 def test_grade_band_boundaries(score: float, band: str) -> None:
     assert grade_band(score) == band
+
+
+@pytest.mark.parametrize(
+    ("value", "rounded"),
+    [(4.94, 4.9), (4.95, 5.0), (4.96, 5.0), (8.95, 9.0), (9.25, 9.3), (4.75, 4.8), (7.0, 7.0)],
+)
+def test_round_grade_rounds_halves_up(value: float, rounded: float) -> None:
+    assert round_grade(value) == rounded
+
+
+def test_a_grade_shown_as_five_passes() -> None:
+    standing = StudentStanding(
+        "Ana Ruiz", graded_weight=100.0, current_grade=4.96, needed_to_pass=None
+    )
+    assert is_passing(standing)
+    assert grade_band(4.96) == "Pass"
 
 
 def test_grade_band_rejects_negative_scores() -> None:

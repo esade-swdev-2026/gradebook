@@ -19,6 +19,11 @@ GRADE_COLUMNS = ["student", "assignment", "score"]
 
 def load_gradebook(data_dir: Path) -> Gradebook:
     """Read and check the three CSV files. Missing files count as empty, so a new class works."""
+    if data_dir.exists() and not data_dir.is_dir():
+        raise ValueError(
+            f"{data_dir} is a file, not a folder: give the folder that holds "
+            f"{STUDENTS_FILE}, {ASSIGNMENTS_FILE} and {GRADES_FILE}."
+        )
     gradebook = _parse_gradebook(data_dir)
     try:
         return require_valid_gradebook(gradebook)
@@ -78,6 +83,10 @@ def save_gradebook(data_dir: Path, gradebook: Gradebook) -> None:
 
 def save_report_csv(path: Path, gradebook: Gradebook) -> None:
     """Write the class report to one CSV file, for opening in a spreadsheet."""
+    if path.is_dir():
+        raise ValueError(
+            f"{path} is a folder: give a file name, for example {path / 'report.csv'}."
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(export_rows(gradebook), columns=EXPORT_COLUMNS).to_csv(path, index=False)
 

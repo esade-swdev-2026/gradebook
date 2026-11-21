@@ -7,7 +7,7 @@ from gradebook.coursework import add_assignment, find_grade, record_grade
 from gradebook.grading import class_standings, student_standing
 from gradebook.models import Gradebook
 from gradebook.ranking import top_students
-from gradebook.report import format_grade_confirmation, format_ranking, format_report
+from gradebook.report import count_of, format_grade_confirmation, format_ranking, format_report
 from gradebook.roster import add_student, remove_student, rename_student
 from gradebook.storage import load_gradebook, save_gradebook, save_report_csv
 from gradebook.student_report import format_student_detail
@@ -121,9 +121,9 @@ def export_command(
     gradebook = _load(data_dir)
     try:
         save_report_csv(path, gradebook)
-    except OSError as error:
+    except (OSError, ValueError) as error:
         _fail(error)
-    typer.echo(f"Exported {len(gradebook.students)} students to {path}")
+    typer.echo(f"Exported {count_of(len(gradebook.students), 'student')} to {path}")
 
 
 @app.command("student")

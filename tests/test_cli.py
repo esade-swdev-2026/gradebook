@@ -92,3 +92,35 @@ def test_remove_unknown_student_fails_cleanly(tmp_path: Path) -> None:
     assert exit_code == 1
     assert "unknown student 'Nobody'" in output
     assert "Noa Ferrer" in (tmp_path / "students.csv").read_text()
+
+
+def test_a_grade_shown_as_five_is_a_pass(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Ana Ruiz")
+    run(tmp_path, "add-assignment", "Exam", "100")
+
+    exit_code, output = run(tmp_path, "record-grade", "Ana Ruiz", "Exam", "4.96")
+
+    assert exit_code == 0
+    assert "Current grade: 5.0 (Pass)" in output
+    assert "Passing right now: 1/1" in run(tmp_path, "report")[1]
+
+
+def test_the_same_student_cannot_be_added_twice_in_other_capitals(tmp_path: Path) -> None:
+    run(tmp_path, "add-student", "Ana Ruiz")
+
+    exit_code, output = run(tmp_path, "add-student", "ana  ruiz")
+
+    assert exit_code == 1
+    assert "student 'ana ruiz' already exists as 'Ana Ruiz'" in output
+    assert (tmp_path / "students.csv").read_text().splitlines() == ["name", "Ana Ruiz"]
+
+
+def test_a_file_given_as_data_dir_is_a_clear_error_not_an_empty_class(tmp_path: Path) -> None:
+    grades_file = tmp_path / "grades.csv"
+    grades_file.write_text("student,assignment,score\n")
+
+    exit_code, output = run(grades_file, "report")
+
+    assert exit_code == 1
+    assert "is a file, not a folder" in output
+    assert "No students yet" not in output

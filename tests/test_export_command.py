@@ -24,7 +24,7 @@ def test_export_to_a_folder_fails_cleanly(tmp_path: Path) -> None:
     result = runner.invoke(app, ["export", str(tmp_path), "--data-dir", str(DEMO_CLASS)])
 
     assert result.exit_code == 1
-    assert "Error:" in result.output
+    assert "is a folder: give a file name" in result.output
 
 
 def test_export_writes_each_students_numbers(tmp_path: Path) -> None:
@@ -48,3 +48,11 @@ def test_export_of_an_empty_class_writes_only_the_header(tmp_path: Path) -> None
     assert exported.read_text().splitlines() == [
         "student,graded_percent,current_grade,band,needed_to_pass"
     ]
+
+
+def test_export_of_one_student_says_student(tmp_path: Path) -> None:
+    runner.invoke(app, ["add-student", "Ana Ruiz", "--data-dir", str(tmp_path / "c")])
+    result = runner.invoke(
+        app, ["export", str(tmp_path / "out.csv"), "--data-dir", str(tmp_path / "c")]
+    )
+    assert f"Exported 1 student to {tmp_path / 'out.csv'}" in result.output

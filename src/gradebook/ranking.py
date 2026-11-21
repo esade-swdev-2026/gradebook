@@ -1,8 +1,8 @@
 """Ranking students by their current weighted grade."""
 
-import math
 from dataclasses import dataclass
 
+from gradebook.grading import round_grade
 from gradebook.models import StudentStanding
 
 
@@ -16,19 +16,20 @@ class RankedStudent:
 def rank_students(standings: list[StudentStanding]) -> list[RankedStudent]:
     """Best current grade first. Students with nothing graded yet are left out.
 
-    Tied students share a position and the next position is skipped (1, 2, 2, 4),
-    the way sports tables do it. Within a tie, students are listed by name.
+    Students whose grades are the same once rounded, as shown, share a position and the
+    next position is skipped (1, 2, 2, 4), the way sports tables do it. Within a tie,
+    students are listed by name.
     """
     graded = [
         (standing.student, standing.current_grade)
         for standing in standings
         if standing.current_grade is not None
     ]
-    graded.sort(key=lambda pair: (-pair[1], pair[0]))
+    graded.sort(key=lambda pair: (-round_grade(pair[1]), pair[0]))
 
     ranked: list[RankedStudent] = []
     for index, (student, grade) in enumerate(graded):
-        if ranked and math.isclose(grade, ranked[-1].current_grade):
+        if ranked and round_grade(grade) == round_grade(ranked[-1].current_grade):
             position = ranked[-1].position
         else:
             position = index + 1
