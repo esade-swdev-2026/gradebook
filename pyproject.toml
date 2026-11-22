@@ -1,7 +1,7 @@
 [project]
 name = "gradebook"
-version = "0.1.0"
-description = "Group project for Software Development for Business"
+version = "1.1.0"
+description = "A command-line gradebook for one class: weighted grades, what each student needs to pass, and class statistics"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
